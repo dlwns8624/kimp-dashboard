@@ -422,6 +422,9 @@ function createServer() {
         console.log(`[Backend] Server listening on port ${port}`);
         wss = new WebSocket.Server({ server });
         wss.on("connection", (ws, req) => {
+          ws.isAlive = true;
+          ws.on("pong", () => { ws.isAlive = true; });
+          
           console.log(`[Backend] WebSocket connected from ${req.socket.remoteAddress}`);
           ws.send(JSON.stringify({ type: "INIT", state }));
           
@@ -438,6 +441,14 @@ function createServer() {
               } catch(e) {}
           });
         });
+
+        const interval = setInterval(() => {
+          wss.clients.forEach((ws) => {
+            if (ws.isAlive === false) return ws.terminate();
+            ws.isAlive = false;
+            ws.ping();
+          });
+        }, 30000);
         resolve(server);
       });
     });

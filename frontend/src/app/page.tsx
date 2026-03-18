@@ -121,16 +121,20 @@ export default function Home() {
   }, [chatParams]);
 
   const checkNotifications = (coins: Record<string, CoinData>) => {
-    if (!notiEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
+    if (!notiEnabled || !("Notification" in window) || Notification.permission !== "granted" || !coins) return;
     const now = Date.now();
-    Object.values(coins).forEach((coin) => {
-      const prem = exchange === "upbit" ? coin.premium : coin.bithumbPremium;
-      const lastTime = lastNotified.current[coin.symbol] || 0;
-      if (prem >= notiTargetKimp && now - lastTime > 5 * 60 * 1000) {
-        lastNotified.current[coin.symbol] = now;
-        new Notification("Kimp Alert", { body: `${coin.symbol} premium reached ${prem.toFixed(2)}%!` });
-      }
-    });
+    try {
+      Object.values(coins).forEach((coin) => {
+        const prem = exchange === "upbit" ? coin.premium : coin.bithumbPremium;
+        const lastTime = lastNotified.current[coin.symbol] || 0;
+        if (prem >= notiTargetKimp && now - lastTime > 5 * 60 * 1000) {
+          lastNotified.current[coin.symbol] = now;
+          new Notification("Kimp Alert", { body: `${coin.symbol} premium reached ${prem.toFixed(2)}%!` });
+        }
+      });
+    } catch (e) {
+      console.error("Notification check error:", e);
+    }
   };
 
   const setupNotifications = async () => {

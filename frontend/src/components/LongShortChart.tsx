@@ -45,6 +45,7 @@ export default function LongShortChart({ symbol, timeframe }: ChartProps) {
       lineWidth: 2,
     });
     seriesRef.current = areaSeries;
+    if (!areaSeries) return;
 
     const handleResize = () => {
       if (chart && chartContainerRef.current) {
