@@ -267,7 +267,11 @@ function formatNumber(value) {
 
 function createServer() {
   const app = express();
-  app.use(cors());
+  app.use(cors({
+    origin: ["https://kimp-dashboard-iota.vercel.app", "http://localhost:3000"],
+    methods: ["GET", "POST"],
+    credentials: true
+  }));
 
 
   app.get("/api/status", (_req, res) => {
@@ -399,9 +403,11 @@ function createServer() {
 
   const start = (port = 3000) =>
     new Promise((resolve) => {
-      const server = app.listen(port, () => {
+      const server = app.listen(port, "0.0.0.0", () => {
+        console.log(`[Backend] Server listening on port ${port}`);
         wss = new WebSocket.Server({ server });
-        wss.on("connection", (ws) => {
+        wss.on("connection", (ws, req) => {
+          console.log(`[Backend] WebSocket connected from ${req.socket.remoteAddress}`);
           ws.send(JSON.stringify({ type: "INIT", state }));
           
           ws.on("message", (msg) => {
