@@ -13,14 +13,16 @@ export default function LongShortPage() {
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/long-short-stats?symbol=${asset}USDT&period=${timeframe}`)
-      .then(res => res.json())
-      .then(data => setStats(data))
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+          if (data && data.global && data.top) setStats(data);
+      })
       .catch(() => {});
   }, [asset, timeframe]);
 
   const cards = [
-    { label: "전체 글로벌 롱/숏 (Binance General)", long: stats ? parseFloat(stats.global.longAccount) * 100 : 50, short: stats ? parseFloat(stats.global.shortAccount) * 100 : 50 },
-    { label: "바이낸스 탑 트레이더 (Binance Top)", long: stats ? parseFloat(stats.top.longAccount) * 100 : 53.2, short: stats ? parseFloat(stats.top.shortAccount) * 100 : 46.8 },
+    { label: "전체 글로벌 롱/숏 (Binance General)", long: stats?.global ? parseFloat(stats.global.longAccount) * 100 : 50, short: stats?.global ? parseFloat(stats.global.shortAccount) * 100 : 50 },
+    { label: "바이낸스 탑 트레이더 (Binance Top)", long: stats?.top ? parseFloat(stats.top.longAccount) * 100 : 53.2, short: stats?.top ? parseFloat(stats.top.shortAccount) * 100 : 46.8 },
     { label: "바이비트 추정 (Bybit Mock)", long: 49.12, short: 50.88 },
     { label: "OKX 추정 (OKX Mock)", long: 55.40, short: 44.60 },
   ];
