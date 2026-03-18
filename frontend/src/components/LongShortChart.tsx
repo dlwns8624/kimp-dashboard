@@ -58,29 +58,38 @@ export default function LongShortChart({ symbol, timeframe }: ChartProps) {
     fetch(`${API_BASE_URL}/api/long-short?symbol=${symbol}USDT&period=${timeframe}`)
       .then((res) => res.json())
       .then((data) => {
-        if (!Array.isArray(data) || !areaSeries) {
+        if (!data || !Array.isArray(data) || data.length === 0) {
             setLoading(false);
             return;
         }
         
-        const formattedData = data.map((d: any) => ({
-          time: Math.floor(new Date(d.timestamp).getTime() / 1000) as import("lightweight-charts").Time,
-          value: parseFloat(d.longAccount) * 100
-        })).sort((a, b) => (a.time as number) - (b.time as number));
+        const formattedData = data
+          .map((d: any) => {
+            const time = Math.floor(new Date(d.timestamp).getTime() / 1000);
+            const value = parseFloat(d.longAccount) * 100;
+            if (isNaN(time) || isNaN(value)) return null;
+            return { time: time as import("lightweight-charts").Time, value };
+          })
+          .filter((item): item is { time: import("lightweight-charts").Time; value: number } => item !== null)
+          .sort((a, b) => (a.time as number) - (b.time as number));
 
         // Ensure unique ascending times
         const uniqueData: any[] = [];
         const seen = new Set();
-        formattedData.forEach(item => {
+        formattedData.forEach((item: any) => {
             if (!seen.has(item.time)) {
                 seen.add(item.time);
                 uniqueData.push(item);
             }
         });
 
-        if (uniqueData.length > 0) {
-            areaSeries.setData(uniqueData);
-            chart.timeScale().fitContent();
+        if (uniqueData.length > 0 && areaSeries) {
+            try {
+                areaSeries.setData(uniqueData);
+                chartRef.current?.timeScale().fitContent();
+            } catch (error) {
+                console.error("Error setting chart data:", error);
+            }
         }
         setLoading(false);
       })
@@ -91,8 +100,8 @@ export default function LongShortChart({ symbol, timeframe }: ChartProps) {
 
     return () => {
       window.removeEventListener("resize", handleResize);
-      if (chart) {
-        chart.remove();
+      if (chartRef.current) {
+        chartRef.current.remove();
         chartRef.current = null;
       }
     };
