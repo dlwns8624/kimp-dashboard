@@ -73,11 +73,15 @@ function computePremium(krwPrice, usdtPrice, fxRate) {
 }
 
 async function updateFx() {
-  const data = await fetchJson("https://open.er-api.com/v6/latest/USD");
-  const rate = data && data.rates ? data.rates.KRW : null;
-  if (rate) {
-    state.fxRate = rate;
-    state.fxUpdatedAt = new Date().toISOString();
+  try {
+    const data = await fetchJson("https://open.er-api.com/v6/latest/USD");
+    const rate = data && data.rates ? data.rates.KRW : null;
+    if (rate) {
+      state.fxRate = rate;
+      state.fxUpdatedAt = new Date().toISOString();
+    }
+  } catch (err) {
+    console.error("Failed to update FX rate:", err.message);
   }
 }
 
@@ -246,7 +250,10 @@ function startBinanceFuturesWebsocket() {
   binanceWs.on("close", () => {
     setTimeout(startBinanceFuturesWebsocket, 3000);
   });
-  binanceWs.on("error", () => {});
+  binanceWs.on("error", (err) => {
+    console.error("Binance Futures WS Error:", err.message);
+    setTimeout(startBinanceFuturesWebsocket, 5000);
+  });
 }
 
 async function refreshData() {
@@ -438,7 +445,14 @@ if (require.main === module) {
   startBinanceFuturesWebsocket();
   
   setInterval(refreshData, 5000);
-  setInterval(updateFx, 60000);
+  setInterval(() => {
+    try {
+      updateFx();
+    } catch (error) {
+      console.error("Error updating FX:", error.message);
+      state.lastError = error.message;
+    }
+  }, 60000);
   setInterval(updateFearAndGreed, 300000); // 5 minutes
   setInterval(updateGlobalMetrics, 300000); // 5 mins
   
