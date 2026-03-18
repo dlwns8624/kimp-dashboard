@@ -275,9 +275,17 @@ function formatNumber(value) {
 function createServer() {
   const app = express();
   app.use(cors({
-    origin: ["https://kimp-dashboard-iota.vercel.app", "http://localhost:3000"],
-    methods: ["GET", "POST"],
-    credentials: true
+    origin: (origin, callback) => {
+      // Allow all vercel and localhost/local-ip origins
+      if (!origin || origin.includes("vercel.app") || origin.includes("localhost") || origin.includes("127.0.0.1")) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
   }));
 
 

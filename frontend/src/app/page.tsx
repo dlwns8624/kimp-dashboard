@@ -76,22 +76,26 @@ export default function Home() {
       const ws = new WebSocket(WS_BASE_URL);
       wsRef.current = ws;
 
-      wsRef.current.onmessage = (event) => {
+    wsRef.current.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
         const type = msg.type?.toUpperCase();
-  
+        
+        // Handle both INIT (initial state) and UPDATE (periodic update)
         if (type === "INIT" || type === "UPDATE") {
-          setData(msg.state);
-          if (msg.state?.coins) { // Added null check for msg.state.coins
-            checkNotifications(msg.state.coins);
+          const newState = msg.state || msg.data; // Support both property names for safety
+          if (newState) {
+            setData(newState);
+            if (newState.coins) {
+               checkNotifications(newState.coins);
+            }
           }
         } else if (type === "CHAT") {
-          const chatMsg = msg.payload;
-          setChatParams(prev => [...prev, chatMsg].slice(-100));
+          const chatMsg = msg.payload || msg.data;
+          if (chatMsg) setChatParams(prev => [...prev, chatMsg].slice(-100));
         } else if (type === "LIQUIDATION") {
-          const liqMsg = msg.payload;
-          setLiquidations(prev => [liqMsg, ...prev].slice(0, 50));
+          const liqMsg = msg.payload || msg.data;
+          if (liqMsg) setLiquidations(prev => [liqMsg, ...prev].slice(0, 50));
         }
       } catch (e) {
         console.error("WS Parse Error:", e);
