@@ -76,21 +76,27 @@ export default function Home() {
       const ws = new WebSocket(WS_BASE_URL);
       wsRef.current = ws;
 
-      ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data);
-          if (message.type === "INIT" || message.type === "UPDATE") {
-            setData(message.state);
-            checkNotifications(message.state.coins);
-          } else if (message.type === "CHAT") {
-            setChatParams(prev => [...prev.slice(-49), message.payload]);
-          } else if (message.type === "LIQUIDATION") {
-            setLiquidations(prev => [message.payload, ...prev.slice(0, 19)]); // Keep last 20
+      wsRef.current.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        const type = msg.type?.toUpperCase();
+  
+        if (type === "INIT" || type === "UPDATE") {
+          setData(msg.state);
+          if (msg.state?.coins) { // Added null check for msg.state.coins
+            checkNotifications(msg.state.coins);
           }
-        } catch (error) {
-          console.error("Failed to parse websocket message", error);
+        } else if (type === "CHAT") {
+          const chatMsg = msg.payload;
+          setChatParams(prev => [...prev, chatMsg].slice(-100));
+        } else if (type === "LIQUIDATION") {
+          const liqMsg = msg.payload;
+          setLiquidations(prev => [liqMsg, ...prev].slice(0, 50));
         }
-      };
+      } catch (e) {
+        console.error("WS Parse Error:", e);
+      }
+    };
 
       ws.onclose = () => {
         console.log("WebSocket disconnected, reconnecting in 3s...");
