@@ -107,9 +107,8 @@ export default function Home() {
             } else if (type === "LIQUIDATION") {
               const l = msg.payload || msg.data;
               const WATCHED = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "BNBUSDT"];
-              if (l && WATCHED.includes(l.symbol)) {
+              if (l && WATCHED.includes((l.symbol || "").toUpperCase())) {
                 setLiquidations(prev => [l, ...prev].slice(0, 60));
-                // 채팅창에 청산 알림 시스템 메시지 추가
                 const sym = l.symbol.replace("USDT", "");
                 const isLong = l.side === "SELL";
                 const amount = (l.price * l.qty).toLocaleString("en-US", { maximumFractionDigits: 0 });
@@ -524,7 +523,17 @@ export default function Home() {
                             {/* 시세 */}
                             <td className="px-2 md:px-3 py-2 md:py-2.5 text-right">
                               {ok ? (
-                                <p className="font-black text-white text-xs md:text-sm leading-none">{fmtKrw(price)}</p>
+                                <>
+                                  <p className="font-black text-white text-xs md:text-sm leading-none">{fmtKrw(price)}</p>
+                                  {/* 모바일: 바이낸스 기준가 작은 글씨로 표시 */}
+                                  {coin.binanceUsdPrice > 0 && (
+                                    <p className="md:hidden text-[8px] font-mono text-yellow-600/70 mt-0.5 leading-none">
+                                      ${coin.binanceUsdPrice >= 1
+                                        ? coin.binanceUsdPrice.toLocaleString("en-US", { maximumFractionDigits: 2 })
+                                        : coin.binanceUsdPrice.toLocaleString("en-US", { maximumFractionDigits: 6 })}
+                                    </p>
+                                  )}
+                                </>
                               ) : (
                                 <span className="text-[9px] text-neutral-700 font-bold">미상장</span>
                               )}
