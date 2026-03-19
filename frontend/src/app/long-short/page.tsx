@@ -15,9 +15,9 @@ export default function LongShortPage() {
     fetch(`${API_BASE_URL}/api/long-short-stats?symbol=${asset}USDT&period=${timeframe}`)
       .then(res => res.ok ? res.json() : null)
       .then(data => {
-          if (data && data.global && data.top) setStats(data);
+        if (data && data.global && data.top) setStats(data);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [asset, timeframe]);
 
   const getSafeRatio = (val: any) => {
@@ -28,6 +28,8 @@ export default function LongShortPage() {
   const cards = [
     { label: "전체 글로벌 롱/숏 (Binance General)", long: stats?.global ? getSafeRatio(stats.global.longAccount) : 50, short: stats?.global ? getSafeRatio(stats.global.shortAccount) : 50 },
     { label: "바이낸스 탑 트레이더 (Binance Top)", long: stats?.top ? getSafeRatio(stats.top.longAccount) : 53.2, short: stats?.top ? getSafeRatio(stats.top.shortAccount) : 46.8 },
+    { label: "바이비트 추정 (Bybit Mock)", long: 49.12, short: 50.88 },
+    { label: "OKX 추정 (OKX Mock)", long: 55.40, short: 44.60 },
   ];
 
   return (
@@ -38,11 +40,11 @@ export default function LongShortPage() {
           <h1 className="text-3xl font-bold text-white tracking-tight">{asset} 롱/숏 비율 분석</h1>
           <p className="text-neutral-400 text-sm mt-1">탑 포지션 및 전체 트레이더의 실시간 포지션(Long vs Short) 비율 데이터를 분석합니다.</p>
         </div>
-        
+
         {/* Filters */}
         <div className="flex items-center gap-3">
-          <select 
-            value={asset} 
+          <select
+            value={asset}
             onChange={e => setAsset(e.target.value)}
             className="bg-neutral-900 border border-neutral-800 text-white text-sm px-4 py-2 rounded-lg outline-none cursor-pointer"
           >
@@ -53,8 +55,8 @@ export default function LongShortPage() {
             <option value="DOGE">DOGE (Dogecoin)</option>
           </select>
 
-          <select 
-            value={timeframe} 
+          <select
+            value={timeframe}
             onChange={e => setTimeframe(e.target.value)}
             className="bg-neutral-900 border border-neutral-800 text-white text-sm px-4 py-2 rounded-lg outline-none cursor-pointer"
           >

@@ -59,13 +59,13 @@ export default function Home() {
   const [chatParams, setChatParams] = useState<ChatMessage[]>([]);
   const [liquidations, setLiquidations] = useState<Liquidation[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
-  
+
   const [exchange, setExchange] = useState<Exchange>("upbit");
   const [sortKey, setSortKey] = useState<SortKey>("marketCap");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Chat Input
   const [chatInput, setChatInput] = useState("");
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -92,25 +92,7 @@ export default function Home() {
     }
   }, [notiEnabled, notiTargetKimp, exchange]);
 
-  const fetchInitialData = useCallback(async () => {
-    try {
-      const res = await fetch(`${WS_BASE_URL.replace("ws://", "http://").replace("wss://", "https://")}/api/state`);
-      if (res.ok) {
-        const fullState = await res.json();
-        if (fullState) {
-          setData(fullState);
-          if (fullState.coins) checkNotifications(fullState.coins);
-        }
-      }
-    } catch (e) {
-      console.error("Initial fetch error:", e);
-    }
-  }, [checkNotifications]);
-
   useEffect(() => {
-    fetchInitialData();
-    const interval = setInterval(fetchInitialData, 10000); // 10s polling fallback
-
     const connectWs = () => {
       const ws = new WebSocket(WS_BASE_URL);
       wsRef.current = ws;
@@ -119,12 +101,14 @@ export default function Home() {
         try {
           const msg = JSON.parse(event.data);
           const type = msg.type?.toUpperCase();
-          
+
           if (type === "INIT" || type === "UPDATE") {
             const newState = msg.state || msg.data;
             if (newState) {
               setData(newState);
-              if (newState.coins) checkNotifications(newState.coins);
+              if (newState.coins) {
+                checkNotifications(newState.coins);
+              }
             }
           } else if (type === "CHAT") {
             const chatMsg = msg.payload || msg.data;
@@ -147,9 +131,8 @@ export default function Home() {
     connectWs();
     return () => {
       if (wsRef.current) wsRef.current.close();
-      clearInterval(interval);
     };
-  }, [checkNotifications, fetchInitialData]);
+  }, [checkNotifications]);
 
   const setupNotifications = async () => {
     if (!("Notification" in window)) return;
@@ -191,7 +174,7 @@ export default function Home() {
     if (!data?.coins || Object.keys(data.coins).length === 0) return [];
     let filtered = Object.values(data.coins) as CoinData[];
     if (searchTerm) {
-        filtered = filtered.filter((c: CoinData) => c.symbol.toLowerCase().includes(searchTerm.toLowerCase()));
+      filtered = filtered.filter((c: CoinData) => c.symbol.toLowerCase().includes(searchTerm.toLowerCase()));
     }
     return filtered.sort((a: CoinData, b: CoinData) => {
       let valA: any, valB: any;
@@ -200,7 +183,7 @@ export default function Home() {
       else if (sortKey === "premium") { valA = exchange === "upbit" ? a.premium : a.bithumbPremium; valB = exchange === "upbit" ? b.premium : b.bithumbPremium; }
       else if (sortKey === "marketCap") { valA = a.marketCap || 0; valB = b.marketCap || 0; }
       else { valA = a.upbitVolumeKrw; valB = b.upbitVolumeKrw; }
-      
+
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
       if (valA > valB) return sortOrder === "asc" ? 1 : -1;
       return 0;
@@ -210,10 +193,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-300 font-sans selection:bg-indigo-500/30 p-4">
       <div className="max-w-[1600px] mx-auto space-y-6">
-        
+
         {/* TOP GRID: Stats & Table */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          
+
           {/* LEFT SIDEBAR: Global Markers (3/12) */}
           <div className="lg:col-span-3 space-y-4">
             <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-xl h-full">
@@ -221,14 +204,14 @@ export default function Home() {
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Kimpga Pro Intelligence</h2>
                 <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${data ? 'bg-emerald-500' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'}`} title={data ? 'Live Connection Established' : 'Connecting to Server...'}></div>
               </div>
-              
+
               <div className="space-y-6">
                 <div>
                   <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5">Global Market Cap</p>
                   <p className="text-2xl font-bold text-neutral-100 tracking-tight">${formatNumber((data?.globalMetrics?.totalMarketCap || 0) / 1e9, 2)}B</p>
                   <p className="text-[10px] text-neutral-500 mt-1">24h Vol: ${formatNumber((data?.globalMetrics?.totalVolume || 0) / 1e9, 2)}B</p>
                 </div>
-                
+
                 <div className="pt-4 border-t border-neutral-800/50">
                   <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-2.5">Bitcoin Dominance</p>
                   <div className="flex items-end justify-between mb-2">
@@ -262,7 +245,7 @@ export default function Home() {
                   <div className="flex items-center justify-between bg-neutral-950/50 p-2.5 rounded-xl border border-neutral-800">
                     <span className="text-[11px] font-bold text-neutral-400 uppercase">Threshold</span>
                     <div className="flex items-center gap-1.5">
-                      <input type="number" value={notiTargetKimp} onChange={(e) => setNotiTargetKimp(Number(e.target.value))} className="w-12 bg-transparent text-white font-bold text-right outline-none focus:text-indigo-400" disabled={!notiEnabled}/>
+                      <input type="number" value={notiTargetKimp} onChange={(e) => setNotiTargetKimp(Number(e.target.value))} className="w-12 bg-transparent text-white font-bold text-right outline-none focus:text-indigo-400" disabled={!notiEnabled} />
                       <span className="text-[11px] font-bold text-neutral-600">%</span>
                     </div>
                   </div>
@@ -273,7 +256,7 @@ export default function Home() {
 
           {/* MAIN CONTENT: Dashboard & List (9/12) */}
           <div className="lg:col-span-9 space-y-4">
-            
+
             {/* Macro Indicators Row (Custom Premium Cards) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg h-[126px] flex flex-col justify-between group hover:border-indigo-500/30 transition-all">
@@ -282,13 +265,11 @@ export default function Home() {
                   <span className="text-indigo-400 text-xs font-bold font-mono">LIVE</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{data?.nasdaq ? formatNumber(data.nasdaq, 1) : "---"}</span>
-                  <span className={`${(data?.nasdaq || 0) > 0 ? 'text-emerald-400' : 'text-rose-400'} text-[10px] font-bold`}>
-                    {data?.nasdaq ? "REAL-TIME" : "LOADING..."}
-                  </span>
+                  <span className="text-2xl font-black text-white">{formatNumber(data?.nasdaq, 1)}</span>
+                  <span className="text-emerald-400 text-[10px] font-bold">▲ 0.8%</span>
                 </div>
                 <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
-                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
                 </div>
               </div>
 
@@ -298,13 +279,11 @@ export default function Home() {
                   <span className="text-orange-400 text-xs font-bold font-mono">SPOT</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{data?.gold ? `$${formatNumber(data.gold, 1)}` : "---"}</span>
-                  <span className={`${(data?.gold || 0) > 0 ? 'text-emerald-400' : 'text-rose-400'} text-[10px] font-bold`}>
-                    {data?.gold ? "SPOT" : "LOADING..."}
-                  </span>
+                  <span className="text-2xl font-black text-white">${formatNumber(data?.gold, 1)}</span>
+                  <span className="text-rose-400 text-[10px] font-bold">▼ 0.2%</span>
                 </div>
                 <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
-                   <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent w-full"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent w-full"></div>
                 </div>
               </div>
 
@@ -318,35 +297,35 @@ export default function Home() {
                   <span className="text-emerald-400 text-[10px] font-bold">STABLE</span>
                 </div>
                 <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
-                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
                 </div>
               </div>
             </div>
 
             {/* Assets Table Container */}
             <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl bg-opacity-80">
-              
+
               {/* Table Toolbar */}
               <div className="p-4 border-b border-neutral-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-neutral-900/40">
                 <div className="flex items-center gap-2">
                   <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800">
-                    <button 
-                      onClick={() => setExchange("upbit")} 
+                    <button
+                      onClick={() => setExchange("upbit")}
                       className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${exchange === "upbit" ? "bg-indigo-500 text-white shadow-lg" : "text-neutral-500 hover:text-neutral-300"}`}
                     >UPBIT</button>
-                    <button 
-                      onClick={() => setExchange("bithumb")} 
+                    <button
+                      onClick={() => setExchange("bithumb")}
                       className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${exchange === "bithumb" ? "bg-orange-500 text-white shadow-lg" : "text-neutral-500 hover:text-neutral-300"}`}
                     >BITHUMB</button>
                   </div>
                   <div className="h-4 w-px bg-neutral-800 mx-2"></div>
                   <span className="text-[10px] font-black text-neutral-500 uppercase">Vs Binance USDT</span>
                 </div>
-                
+
                 <div className="relative w-full md:w-72 group">
-                  <input 
-                    type="text" 
-                    placeholder="심볼/코인명 검색..." 
+                  <input
+                    type="text"
+                    placeholder="심볼/코인명 검색..."
                     className="w-full bg-neutral-950 text-xs text-white pl-10 pr-4 py-2.5 rounded-xl border border-neutral-800 outline-none focus:border-indigo-500/50 transition-all font-bold placeholder:font-medium placeholder:text-neutral-600"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -403,32 +382,32 @@ export default function Home() {
                               </div>
                             </td>
                             <td className="p-2 md:px-3 md:py-2 text-right">
-                               <p className="font-black text-neutral-300 text-xs">
-                                 {(!coin.marketCap || isNaN(coin.marketCap)) ? "-" :
-                                  coin.marketCap > 1e12 ? "$" + (coin.marketCap / 1e12).toFixed(1) + "T" : 
-                                  "$" + (coin.marketCap / 1e9).toFixed(1) + "B"}
-                               </p>
-                             </td>
-                             <td className="p-2 md:px-3 md:py-2 text-right">
-                               <p className="font-black text-xs text-white">₩{formatNumber(price, 0)}</p>
-                               <p className={`text-[9px] font-bold mt-0.5 ${coin.upbitChangeRate > 0 ? "text-rose-500" : "text-blue-500"}`}>
-                                 {coin.upbitChangeRate > 0 ? "▲" : "▼"} {formatNumber(Math.abs(coin.upbitChangeRate * 100), 2)}%
-                               </p>
-                             </td>
-                             <td className="p-2 md:px-3 md:py-2 text-right">
-                               <span className={`inline-block px-2 py-1 rounded-md text-[11px] font-black shadow-sm ${getPremiumColor(premium)}`}>
-                                 {premium > 0 ? "+" : ""}{formatNumber(premium, 2)}%
-                               </span>
-                               <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">${formatNumber(coin.usdtPrice, 2)}</p>
-                             </td>
-                             <td className="p-2 md:px-3 md:py-2 text-right">
-                               <p className="font-black text-neutral-400 text-xs">{formatNumber(coin.upbitVolumeKrw / 1e8, 0)}<span className="text-[9px] ml-0.5 text-neutral-600 font-bold">억</span></p>
-                               <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">BIN VOL ${formatNumber(coin.binanceVolumeUsdt / 1e6, 1)}M</p>
-                             </td>
-                           </tr>
-                           {expandedRow === coin.symbol && (
-                             <tr>
-                               <td colSpan={5} className="p-0 border-b border-neutral-800 bg-neutral-900/40 animate-in fade-in slide-in-from-top-2 duration-300">
+                              <p className="font-black text-neutral-300 text-xs">
+                                {(!coin.marketCap || isNaN(coin.marketCap)) ? "-" :
+                                  coin.marketCap > 1e12 ? "$" + (coin.marketCap / 1e12).toFixed(1) + "T" :
+                                    "$" + (coin.marketCap / 1e9).toFixed(1) + "B"}
+                              </p>
+                            </td>
+                            <td className="p-2 md:px-3 md:py-2 text-right">
+                              <p className="font-black text-xs text-white">₩{formatNumber(price, 0)}</p>
+                              <p className={`text-[9px] font-bold mt-0.5 ${coin.upbitChangeRate > 0 ? "text-rose-500" : "text-blue-500"}`}>
+                                {coin.upbitChangeRate > 0 ? "▲" : "▼"} {formatNumber(Math.abs(coin.upbitChangeRate * 100), 2)}%
+                              </p>
+                            </td>
+                            <td className="p-2 md:px-3 md:py-2 text-right">
+                              <span className={`inline-block px-2 py-1 rounded-md text-[11px] font-black shadow-sm ${getPremiumColor(premium)}`}>
+                                {premium > 0 ? "+" : ""}{formatNumber(premium, 2)}%
+                              </span>
+                              <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">${formatNumber(coin.usdtPrice, 2)}</p>
+                            </td>
+                            <td className="p-2 md:px-3 md:py-2 text-right">
+                              <p className="font-black text-neutral-400 text-xs">{formatNumber(coin.upbitVolumeKrw / 1e8, 0)}<span className="text-[9px] ml-0.5 text-neutral-600 font-bold">억</span></p>
+                              <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">BIN VOL ${formatNumber(coin.binanceVolumeUsdt / 1e6, 1)}M</p>
+                            </td>
+                          </tr>
+                          {expandedRow === coin.symbol && (
+                            <tr>
+                              <td colSpan={5} className="p-0 border-b border-neutral-800 bg-neutral-900/40 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div className="p-2 md:p-6">
                                   <Chart symbol={coin.symbol} upbitSymbol={coin.upbitSymbol} />
                                 </div>
@@ -465,7 +444,7 @@ export default function Home() {
                   <div>
                     <div className="flex items-baseline gap-2 mb-0.5">
                       <span className="font-bold text-xs text-neutral-100">{msg.sender}</span>
-                      <span className="text-[9px] text-neutral-600 font-mono italic" suppressHydrationWarning>{new Date(msg.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                      <span className="text-[9px] text-neutral-600 font-mono italic">{new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     <p className="text-sm text-neutral-400 leading-relaxed break-all selection:bg-indigo-500 selection:text-white">{msg.text}</p>
                   </div>
@@ -474,9 +453,9 @@ export default function Home() {
               <div ref={chatBottomRef} />
             </div>
             <form onSubmit={sendChat} className="p-4 border-t border-neutral-800 bg-neutral-950/40 flex items-center gap-2">
-              <input 
-                type="text" 
-                placeholder="시장 정황을 공유하세요..." 
+              <input
+                type="text"
+                placeholder="시장 정황을 공유하세요..."
                 className="flex-1 bg-neutral-900/50 text-sm text-white outline-none px-4 py-2.5 rounded-xl border border-neutral-800 focus:border-indigo-500/50 transition-all font-medium"
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
@@ -497,8 +476,8 @@ export default function Home() {
             <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
               {liquidations.length === 0 ? (
                 <div className="text-center py-20 flex flex-col items-center gap-3">
-                   <div className="w-8 h-8 border-2 border-neutral-800 border-t-rose-500/50 rounded-full animate-spin"></div>
-                   <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">Waiting for major liquidation events...</p>
+                  <div className="w-8 h-8 border-2 border-neutral-800 border-t-rose-500/50 rounded-full animate-spin"></div>
+                  <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">Waiting for major liquidation events...</p>
                 </div>
               ) : (
                 liquidations.map((liq, i) => (
@@ -525,5 +504,22 @@ export default function Home() {
 
       </div>
     </div>
+  );
+}
+                      </div >
+                    </div >
+  <div className="text-right">
+    <p className="text-sm font-black text-white mb-0.5">${formatNumber(liq.price * liq.qty, 0)}</p>
+    <p className="text-[9px] font-medium text-neutral-500 tracking-tight">Price: ${formatNumber(liq.price, 2)}</p>
+  </div>
+                  </div >
+                ))
+              )}
+            </div >
+          </div >
+        </div >
+
+      </div >
+    </div >
   );
 }

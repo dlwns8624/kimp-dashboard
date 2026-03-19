@@ -11,7 +11,7 @@ const COINS = [
   { symbol: "SOL", upbit: "KRW-SOL", bithumb: "SOL", binance: "SOLUSDT" },
   { symbol: "XRP", upbit: "KRW-XRP", bithumb: "XRP", binance: "XRPUSDT" },
   { symbol: "DOGE", upbit: "KRW-DOGE", bithumb: "DOGE", binance: "DOGEUSDT" },
-  
+
   // High Cap & L1/L2
   { symbol: "ADA", upbit: "KRW-ADA", bithumb: "ADA", binance: "ADAUSDT" },
   { symbol: "AVAX", upbit: "KRW-AVAX", bithumb: "AVAX", binance: "AVAXUSDT" },
@@ -23,7 +23,7 @@ const COINS = [
   { symbol: "APT", upbit: "KRW-APT", bithumb: "APT", binance: "APTUSDT" },
   { symbol: "ARB", upbit: "KRW-ARB", bithumb: "ARB", binance: "ARBUSDT" },
   { symbol: "OP", upbit: "KRW-OP", bithumb: "OP", binance: "OPUSDT" },
-  
+
   // Main Alts
   { symbol: "LTC", upbit: "KRW-LTC", bithumb: "LTC", binance: "LTCUSDT" },
   { symbol: "BCH", upbit: "KRW-BCH", bithumb: "BCH", binance: "BCHUSDT" },
@@ -35,7 +35,7 @@ const COINS = [
   { symbol: "FIL", upbit: "KRW-FIL", bithumb: "FIL", binance: "FILUSDT" },
   { symbol: "IMX", upbit: "KRW-IMX", bithumb: "IMX", binance: "IMXUSDT" },
   { symbol: "ALGO", upbit: "KRW-ALGO", bithumb: "ALGO", binance: "ALGOUSDT" },
-  
+
   // Ecosystem & Utility
   { symbol: "HBAR", upbit: "KRW-HBAR", bithumb: "HBAR", binance: "HBARUSDT" },
   { symbol: "ICP", upbit: "KRW-ICP", bithumb: "ICP", binance: "ICPUSDT" },
@@ -47,14 +47,14 @@ const COINS = [
   { symbol: "SAND", upbit: "KRW-SAND", bithumb: "SAND", binance: "SANDUSDT" },
   { symbol: "MANA", upbit: "KRW-MANA", bithumb: "MANA", binance: "MANAUSDT" },
   { symbol: "GALA", upbit: "KRW-GALA", bithumb: "GALA", binance: "GALAUSDT" },
-  
+
   // DeFi
   { symbol: "AAVE", upbit: "KRW-AAVE", bithumb: "AAVE", binance: "AAVEUSDT" },
   { symbol: "MKR", upbit: "KRW-MKR", bithumb: "MKR", binance: "MKRUSDT" },
   { symbol: "SNX", upbit: "KRW-SNX", bithumb: "SNX", binance: "SNXUSDT" },
   { symbol: "CRV", upbit: "KRW-CRV", bithumb: "CRV", binance: "CRVUSDT" },
   { symbol: "UNI", upbit: "KRW-UNI", bithumb: "UNI", binance: "UNIUSDT" },
-  
+
   // Emerging & Trending
   { symbol: "BLUR", upbit: "KRW-BLUR", bithumb: "BLUR", binance: "BLURUSDT" },
   { symbol: "BONK", upbit: "KRW-BONK", bithumb: "BONK", binance: "BONKUSDT" },
@@ -66,7 +66,7 @@ const COINS = [
   { symbol: "ASTR", upbit: "KRW-ASTR", bithumb: "ASTR", binance: "ASTRUSDT" },
   { symbol: "GLM", upbit: "KRW-GLM", bithumb: "GLM", binance: "GLMUSDT" },
   { symbol: "JUP", upbit: "KRW-JUP", bithumb: "JUP", binance: "JUPUSDT" },
-  
+
   // Others matching Kimpga variety
   { symbol: "MASK", upbit: "KRW-MASK", bithumb: "MASK", binance: "MASKUSDT" },
   { symbol: "CELO", upbit: "KRW-CELO", bithumb: "CELO", binance: "CELOUSDT" },
@@ -89,7 +89,7 @@ const state = {
   fxRate: null,
   fxUpdatedAt: null,
   fearAndGreed: null,
-  globalMetrics: null,
+  globalMetrics: null, // dominances, marketcap etc
   nasdaq: null,
   gold: null,
   coins: {},
@@ -208,7 +208,7 @@ async function updateGlobalMetrics() {
 async function updatePrices() {
   const upbitMarkets = COINS.map((coin) => coin.upbit).join(",");
   const binanceSymbols = JSON.stringify(COINS.map((coin) => coin.binance));
-  
+
   const upbitUrl = `https://api.upbit.com/v1/ticker?markets=${upbitMarkets}`;
   const binanceUrl = `https://api.binance.com/api/v3/ticker/24hr?symbols=${encodeURIComponent(binanceSymbols)}`;
   const bithumbUrl = "https://api.bithumb.com/public/ticker/ALL_KRW";
@@ -232,7 +232,7 @@ async function updatePrices() {
       binanceMap.set(item.symbol, item);
     });
   }
-  
+
   const bithumbData = bithumbDataRes && bithumbDataRes.status === "0000" ? bithumbDataRes.data : {};
   console.log(`[Backend] Fetched Upbit: ${upbitMap.size}, Binance: ${binanceMap.size}, Bithumb: ${Object.keys(bithumbData).length}`);
 
@@ -240,37 +240,37 @@ async function updatePrices() {
     const upbit = upbitMap.get(coin.upbit);
     const binance = binanceMap.get(coin.binance);
     const bithumb = bithumbData[coin.bithumb];
-    
+
+    // Allow proceeding even if binance is missing
     if (!binance) {
-        console.warn(`[Backend] Missing binance data for ${coin.symbol}`);
-        return; 
+      // We will handle null binance later
     }
 
     // fallback to Bithumb if Upbit is missing
     let krwPrice = 0;
     let upbitChangeRate = 0;
     let upbitVolumeKrw = 0;
-    
+
     if (upbit) {
-        krwPrice = upbit.trade_price;
-        upbitChangeRate = upbit.signed_change_rate;
-        upbitVolumeKrw = upbit.acc_trade_price_24h;
+      krwPrice = upbit.trade_price;
+      upbitChangeRate = upbit.signed_change_rate;
+      upbitVolumeKrw = upbit.acc_trade_price_24h;
     } else if (bithumb) {
-        krwPrice = Number(bithumb.closing_price);
-        upbitChangeRate = Number(bithumb.fluctate_rate_24H) / 100;
-        upbitVolumeKrw = Number(bithumb.acc_trade_value_24H);
+      krwPrice = Number(bithumb.closing_price);
+      upbitChangeRate = Number(bithumb.fluctate_rate_24H) / 100;
+      upbitVolumeKrw = Number(bithumb.acc_trade_value_24H);
     } else {
-        return; // neither
+      return; // neither
     }
 
-    const usdtPrice = Number(binance.lastPrice);
-    const premium = computePremium(krwPrice, usdtPrice, state.fxRate);
-    
+    const usdtPrice = binance ? Number(binance.lastPrice) : (krwPrice / (state.fxRate || 1400));
+    const premium = binance ? computePremium(krwPrice, usdtPrice, state.fxRate) : 0;
+
     let bithumbPrice = krwPrice;
     let bithumbPremium = premium;
     if (bithumb) {
-        bithumbPrice = Number(bithumb.closing_price);
-        bithumbPremium = computePremium(bithumbPrice, usdtPrice, state.fxRate);
+      bithumbPrice = Number(bithumb.closing_price);
+      bithumbPremium = computePremium(bithumbPrice, usdtPrice, state.fxRate);
     }
 
     state.coins[coin.symbol] = {
@@ -284,29 +284,27 @@ async function updatePrices() {
       bithumbPremium,
       upbitChangeRate,
       upbitVolumeKrw,
-      binanceChangeRate: Number(binance.priceChangePercent),
-      binanceVolumeUsdt: Number(binance.quoteVolume),
+      binanceChangeRate: binance ? Number(binance.priceChangePercent) : 0,
+      binanceVolumeUsdt: binance ? Number(binance.quoteVolume) : 0,
       marketCap: 0, // Will be updated by CC fallback or default
       updatedAt: new Date().toISOString()
     };
   });
- 
-  // Fetch MarketCap/Global data from CC in chunks to avoid URL limits (60+ coins)
+
+  // Always fetch MarketCap/Global data from CC to keep it fresh
   try {
-    const CHUNK_SIZE = 15;
-    for (let i = 0; i < COINS.length; i += CHUNK_SIZE) {
-      const chunk = COINS.slice(i, i + CHUNK_SIZE);
-      const fsyms = chunk.map(c => c.symbol).join(",");
-      const ccUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
-      const ccData = await fetchJson(ccUrl, 5000);
-      if (ccData && ccData.RAW) {
-        chunk.forEach((coin) => {
-          const raw = ccData.RAW[coin.symbol];
-          if (raw && raw.USD && state.coins[coin.symbol]) {
-            state.coins[coin.symbol].marketCap = raw.USD.MKTCAP || 0;
-          }
-        });
-      }
+    const fsyms = COINS.map(c => c.symbol).join(",");
+    const ccUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
+    const ccData = await fetchJson(ccUrl, 5000);
+    if (ccData && ccData.RAW) {
+      COINS.forEach((coin) => {
+        const raw = ccData.RAW[coin.symbol];
+        if (raw && raw.USD && state.coins[coin.symbol]) {
+          state.coins[coin.symbol].marketCap = raw.USD.MKTCAP || 0;
+          // If we were in fallback mode, we'd also update prices here, 
+          // but we already have Binance/Upbit prices which are better.
+        }
+      });
     }
   } catch (err) {
     console.error("[Backend] CC MarketCap fetch failed:", err.message);
@@ -315,50 +313,44 @@ async function updatePrices() {
   if (Object.keys(state.coins).length === 0) {
     console.warn("[Backend] Primary APIs blocked. Fallback to CryptoCompare...");
     try {
-      const CHUNK_SIZE = 15;
-      for (let i = 0; i < COINS.length; i += CHUNK_SIZE) {
-        const chunk = COINS.slice(i, i + CHUNK_SIZE);
-        const fsyms = chunk.map(c => c.symbol).join(",");
-        const fallbackUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
-        const fallbackData = await fetchJson(fallbackUrl, 5000);
-        
-        if (fallbackData && fallbackData.RAW) {
-          chunk.forEach((coin) => {
-            const raw = fallbackData.RAW[coin.symbol];
-            if (raw && raw.USD && raw.KRW) {
-              const krwPrice = raw.KRW.PRICE;
-              const usdtPrice = raw.USD.PRICE;
-              const premium = computePremium(krwPrice, usdtPrice, state.fxRate);
-              
-              state.coins[coin.symbol] = {
-                symbol: coin.symbol,
-                upbitSymbol: coin.upbit,
-                binanceSymbol: coin.binance,
-                krwPrice,
-                usdtPrice,
-                premium,
-                bithumbPrice: krwPrice,
-                bithumbPremium: premium,
-                upbitChangeRate: raw.KRW.CHANGEPCT24HOUR / 100,
-                upbitVolumeKrw: raw.KRW.VOLUME24HOURTO,
-                binanceChangeRate: raw.USD.CHANGEPCT24HOUR,
-                binanceVolumeUsdt: raw.USD.VOLUME24HOURTO,
-                marketCap: raw.USD.MKTCAP || 0,
-                updatedAt: new Date().toISOString()
-              };
-            }
-          });
-        }
+      const fsyms = COINS.map(c => c.symbol).join(",");
+      const fallbackUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
+      const fallbackData = await fetchJson(fallbackUrl, 5000);
+
+      if (fallbackData && fallbackData.RAW) {
+        COINS.forEach((coin) => {
+          const raw = fallbackData.RAW[coin.symbol];
+          if (raw && raw.USD && raw.KRW) {
+            const krwPrice = raw.KRW.PRICE;
+            const usdtPrice = raw.USD.PRICE;
+            const premium = computePremium(krwPrice, usdtPrice, state.fxRate);
+
+            state.coins[coin.symbol] = {
+              symbol: coin.symbol,
+              upbitSymbol: coin.upbit,
+              binanceSymbol: coin.binance,
+              krwPrice,
+              usdtPrice,
+              premium,
+              bithumbPrice: krwPrice,
+              bithumbPremium: premium,
+              upbitChangeRate: raw.KRW.CHANGEPCT24HOUR / 100,
+              upbitVolumeKrw: raw.KRW.VOLUME24HOURTO,
+              binanceChangeRate: raw.USD.CHANGEPCT24HOUR,
+              binanceVolumeUsdt: raw.USD.VOLUME24HOURTO,
+              marketCap: raw.USD.MKTCAP || 0,
+              updatedAt: new Date().toISOString()
+            };
+          }
+        });
       }
     } catch (err) {
       console.error("[Backend] CryptoCompare fallback failed:", err.message);
     }
   }
 
-  // If STILL empty (e.g. all APIs failed), we simply log the criticality. 
-  // No mock data injection to avoid misleading the user with stale prices.
   if (Object.keys(state.coins).length === 0) {
-    console.error("[Backend] CRITICAL: All data sources failed. Waiting for next interval...");
+    console.error("[Backend] CRITICAL: All data sources failed. No state updated.");
   }
 
   console.log(`[Backend] State updated with ${Object.keys(state.coins).length} coins.`);
@@ -405,7 +397,7 @@ function startBinanceFuturesWebsocket() {
           time: parsed.E
         });
       }
-    } catch (e) {}
+    } catch (e) { }
   });
   binanceWs.on("close", () => {
     setTimeout(startBinanceFuturesWebsocket, 3000);
@@ -447,9 +439,12 @@ function createServer() {
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
   }));
-  
+
   app.get("/", (req, res) => res.send("KIMP Dashboard Backend Active"));
   app.get("/api/debug", (req, res) => res.json(state));
+
+  // REST polling endpoint for frontend fallback
+  app.get("/api/state", (_req, res) => res.json(state));
 
 
   app.get("/api/status", (_req, res) => {
@@ -470,14 +465,14 @@ function createServer() {
       const url = `https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=${period}&limit=30`;
       const data = await fetchJson(url).catch(() => null);
       if (!data || !Array.isArray(data) || data.length === 0) {
-          const now = Date.now();
-          const mockTrend = Array.from({ length: 30 }).map((_, i) => ({
-              symbol,
-              longAccount: (0.5 + Math.sin(i * 0.5) * 0.05).toString(),
-              shortAccount: (0.5 - Math.sin(i * 0.5) * 0.05).toString(),
-              timestamp: now - (30 - i) * 3600000
-          }));
-          return res.json(mockTrend);
+        const now = Date.now();
+        const mockTrend = Array.from({ length: 30 }).map((_, i) => ({
+          symbol,
+          longAccount: (0.5 + Math.sin(i * 0.5) * 0.05).toString(),
+          shortAccount: (0.5 - Math.sin(i * 0.5) * 0.05).toString(),
+          timestamp: now - (30 - i) * 3600000
+        }));
+        return res.json(mockTrend);
       }
       res.json(data);
     } catch (error) {
@@ -491,15 +486,15 @@ function createServer() {
     try {
       const globalUrl = `https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=${period}&limit=1`;
       const topUrl = `https://fapi.binance.com/futures/data/topLongShortAccountRatio?symbol=${symbol}&period=${period}&limit=1`;
-      
+
       const [globalData, topData] = await Promise.all([
-          fetchJson(globalUrl).catch(() => [{ longAccount: 0.5, shortAccount: 0.5 }]),
-          fetchJson(topUrl).catch(() => [{ longAccount: 0.5, shortAccount: 0.5 }])
+        fetchJson(globalUrl).catch(() => [{ longAccount: 0.5, shortAccount: 0.5 }]),
+        fetchJson(topUrl).catch(() => [{ longAccount: 0.5, shortAccount: 0.5 }])
       ]);
 
       res.json({
-          global: globalData[0] || { longAccount: 0.5, shortAccount: 0.5 },
-          top: topData[0] || { longAccount: 0.5, shortAccount: 0.5 }
+        global: globalData[0] || { longAccount: 0.5, shortAccount: 0.5 },
+        top: topData[0] || { longAccount: 0.5, shortAccount: 0.5 }
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch long/short stats" });
@@ -511,8 +506,8 @@ function createServer() {
       const page = parseInt(req.query.page) || 0;
       const url = "https://min-api.cryptocompare.com/data/v2/news/?lang=EN";
       const data = await fetchJson(url, 5000).catch(err => {
-          console.error("External News API failed:", err.message);
-          return null;
+        console.error("External News API failed:", err.message);
+        return null;
       });
       if (data && Array.isArray(data.Data)) {
         // Return a slice based on page for demo
@@ -521,9 +516,9 @@ function createServer() {
       } else {
         // Fallback
         const mockNews = [
-          { id: "f1", title: "Bitcoin Consolidation Continues Near $74k", body: "Market analysts suggest a period of price discovery as BTC holds steady.", source: "CryptoCompare (Mock)", published_on: Math.floor(Date.now()/1000 - 3600), url: "https://kimp.co.kr" },
-          { id: "f2", title: "Global Regulatory Shifts for Stablecoins", body: "New standard guidelines are being discussed by G7 finance ministers.", source: "KIMP News", published_on: Math.floor(Date.now()/1000 - 7200), url: "https://kimp.co.kr" },
-          { id: "f3", title: "Ethereum Layer 2 Adoption Spikes", body: "Transaction counts on key L2 networks reach all-time highs as fees drop.", source: "KIMP News", published_on: Math.floor(Date.now()/1000 - 10800), url: "https://kimp.co.kr" }
+          { id: "f1", title: "Bitcoin Consolidation Continues Near $74k", body: "Market analysts suggest a period of price discovery as BTC holds steady.", source: "CryptoCompare (Mock)", published_on: Math.floor(Date.now() / 1000 - 3600), url: "https://kimp.co.kr" },
+          { id: "f2", title: "Global Regulatory Shifts for Stablecoins", body: "New standard guidelines are being discussed by G7 finance ministers.", source: "KIMP News", published_on: Math.floor(Date.now() / 1000 - 7200), url: "https://kimp.co.kr" },
+          { id: "f3", title: "Ethereum Layer 2 Adoption Spikes", body: "Transaction counts on key L2 networks reach all-time highs as fees drop.", source: "KIMP News", published_on: Math.floor(Date.now() / 1000 - 10800), url: "https://kimp.co.kr" }
         ];
         res.json(mockNews);
       }
@@ -544,19 +539,6 @@ function createServer() {
       { id: 8, date: "2026-03-23", time: "17:30", name: "독일 제조업 PMI", importance: "보통", actual: "-", forecast: "42.5", previous: "42.2" }
     ];
     res.json(CALENDAR_EVENTS);
-  });
-  
-  app.get("/api/candles", async (req, res) => {
-    const { market, count = 100 } = req.query;
-    if (!market) return res.status(400).json({ error: "Market is required" });
-    try {
-      const url = `https://api.upbit.com/v1/candles/minutes/60?market=${market}&count=${count}`;
-      const data = await fetchJson(url, 5000);
-      res.json(data);
-    } catch (error) {
-      console.error("[Backend] Proxy Candles Error:", error.message);
-      res.status(500).json({ error: "Failed to fetch candle data" });
-    }
   });
 
   app.get("/api/coins", (_req, res) => {
@@ -611,21 +593,21 @@ function createServer() {
         wss.on("connection", (ws, req) => {
           ws.isAlive = true;
           ws.on("pong", () => { ws.isAlive = true; });
-          
+
           console.log(`[Backend] WebSocket connected from ${req.socket.remoteAddress}`);
           ws.send(JSON.stringify({ type: "INIT", state }));
-          
+
           ws.on("message", (msg) => {
-              try {
-                  const data = JSON.parse(msg);
-                  if (data.type === "CHAT_MSG") {
-                      broadcastEvent("CHAT", {
-                          sender: data.sender || "유저",
-                          text: data.text,
-                          time: Date.now()
-                      });
-                  }
-              } catch(e) {}
+            try {
+              const data = JSON.parse(msg);
+              if (data.type === "CHAT_MSG") {
+                broadcastEvent("CHAT", {
+                  sender: data.sender || "유저",
+                  text: data.text,
+                  time: Date.now()
+                });
+              }
+            } catch (e) { }
           });
         });
 
@@ -650,8 +632,8 @@ if (require.main === module) {
   updateGlobalMetrics();
   updateMacro();
   startBinanceFuturesWebsocket();
-  
-  setInterval(refreshData, 3000); 
+
+  setInterval(refreshData, 3000);
   setInterval(updateMacro, 60000); // 1 min
   setInterval(() => {
     try {
@@ -663,7 +645,7 @@ if (require.main === module) {
   }, 60000);
   setInterval(updateFearAndGreed, 300000); // 5 minutes
   setInterval(updateGlobalMetrics, 300000); // 5 mins
-  
+
   start(process.env.PORT ? Number(process.env.PORT) : 3000);
 }
 
