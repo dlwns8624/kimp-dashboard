@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { API_BASE_URL } from "@/lib/constants";
 import { formatDistanceToNow } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -20,7 +20,7 @@ export default function NewsPage() {
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
 
-  const fetchNews = (p: number) => {
+  const fetchNews = useCallback((p: number) => {
     if (p === 0) setLoading(true);
     fetch(`${API_BASE_URL}/api/news?page=${p}&limit=10`)
       .then(res => res.json())
@@ -40,12 +40,11 @@ export default function NewsPage() {
         console.error("Failed to fetch news", err);
         setLoading(false);
       });
-  };
+  }, []);
 
   useEffect(() => {
     fetchNews(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [fetchNews]);
 
   const loadMoreNews = () => {
     const nextPage = page + 1;
