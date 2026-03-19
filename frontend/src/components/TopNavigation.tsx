@@ -9,6 +9,7 @@ export default function TopNavigation() {
 
   const navLinks = [
     { name: "김프", href: "/" },
+    { name: "지표", href: "/market-indicators" },
     { name: "롱·숏", href: "/long-short" },
     { name: "뉴스", href: "/news" },
     { name: "경제 캘린더", href: "/calendar" },
