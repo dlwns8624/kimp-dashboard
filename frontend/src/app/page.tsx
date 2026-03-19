@@ -506,20 +506,3 @@ export default function Home() {
     </div>
   );
 }
-                      </div >
-                    </div >
-  <div className="text-right">
-    <p className="text-sm font-black text-white mb-0.5">${formatNumber(liq.price * liq.qty, 0)}</p>
-    <p className="text-[9px] font-medium text-neutral-500 tracking-tight">Price: ${formatNumber(liq.price, 2)}</p>
-  </div>
-                  </div >
-                ))
-              )}
-            </div >
-          </div >
-        </div >
-
-      </div >
-    </div >
-  );
-}
