@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { createChart, ColorType } from 'lightweight-charts';
+import { API_BASE_URL } from '@/lib/constants';
 
 interface ChartProps {
   symbol: string;
@@ -50,8 +51,8 @@ export default function Chart({ symbol, upbitSymbol }: ChartProps) {
       wickDownColor: '#3b82f6',
     });
 
-    // Fetch Upbit Candles
-    const fetchUrl = `https://api.upbit.com/v1/candles/minutes/60?market=${market}&count=100`;
+    // Fetch Candles via our Backend Proxy to avoid 403/CORS
+    const fetchUrl = `${API_BASE_URL}/api/candles?market=${market}&count=100`;
     fetch(fetchUrl)
       .then(res => res.json())
       .then(data => {

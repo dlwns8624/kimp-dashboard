@@ -560,6 +560,19 @@ function createServer() {
     ];
     res.json(CALENDAR_EVENTS);
   });
+  
+  app.get("/api/candles", async (req, res) => {
+    const { market, count = 100 } = req.query;
+    if (!market) return res.status(400).json({ error: "Market is required" });
+    try {
+      const url = `https://api.upbit.com/v1/candles/minutes/60?market=${market}&count=${count}`;
+      const data = await fetchJson(url, 5000);
+      res.json(data);
+    } catch (error) {
+      console.error("[Backend] Proxy Candles Error:", error.message);
+      res.status(500).json({ error: "Failed to fetch candle data" });
+    }
+  });
 
   app.get("/api/coins", (_req, res) => {
     const rows = COINS.map((coin) => {
