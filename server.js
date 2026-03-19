@@ -139,6 +139,26 @@ function computePremium(krwPrice, usdtPrice, fxRate) {
   return ((krwPrice / usdValue) - 1) * 100;
 }
 
+async function updateMacro() {
+  try {
+    // Try to get Nasdaq and Gold from a public chart API (Yahoo Finance public endpoint)
+    // ^NDX = Nasdaq 100, GC=F = Gold Futures
+    const [ndx, gc] = await Promise.all([
+      fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/%5ENDX?interval=1m&range=1d").catch(() => null),
+      fetchJson("https://query1.finance.yahoo.com/v8/finance/chart/GC=F?interval=1m&range=1d").catch(() => null)
+    ]);
+
+    if (ndx && ndx.chart && ndx.chart.result) {
+      state.nasdaq = ndx.chart.result[0].meta.regularMarketPrice;
+    }
+    if (gc && gc.chart && gc.chart.result) {
+      state.gold = gc.chart.result[0].meta.regularMarketPrice;
+    }
+  } catch (err) {
+    console.error("Macro update failed:", err.message);
+  }
+}
+
 async function updateFx() {
   try {
     const data = await fetchJson("https://open.er-api.com/v6/latest/USD");
@@ -318,6 +338,7 @@ async function updatePrices() {
               upbitVolumeKrw: raw.KRW.VOLUME24HOURTO,
               binanceChangeRate: raw.USD.CHANGEPCT24HOUR,
               binanceVolumeUsdt: raw.USD.VOLUME24HOURTO,
+              marketCap: raw.USD.MKTCAP || 0,
               updatedAt: new Date().toISOString()
             };
           }
@@ -343,6 +364,7 @@ async function updatePrices() {
             upbitVolumeKrw: 5000000000,
             binanceChangeRate: 0.04,
             binanceVolumeUsdt: 1000000,
+            marketCap: 1000000000,
             updatedAt: new Date().toISOString()
         };
     });
@@ -546,6 +568,7 @@ function createServer() {
         upbitVolumeKrw: data.upbitVolumeKrw,
         binanceChangeRate: data.binanceChangeRate,
         binanceVolumeUsdt: data.binanceVolumeUsdt,
+        marketCap: data.marketCap || 0,
         updatedAt: data.updatedAt
       };
     });
@@ -621,9 +644,11 @@ if (require.main === module) {
   refreshData();
   updateFearAndGreed();
   updateGlobalMetrics();
+  updateMacro();
   startBinanceFuturesWebsocket();
   
-  setInterval(refreshData, 3000); // Higher frequency for better real-time feel
+  setInterval(refreshData, 3000); 
+  setInterval(updateMacro, 60000); // 1 min
   setInterval(() => {
     try {
       updateFx();

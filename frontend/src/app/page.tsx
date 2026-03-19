@@ -257,16 +257,48 @@ export default function Home() {
           {/* MAIN CONTENT: Dashboard & List (9/12) */}
           <div className="lg:col-span-9 space-y-4">
             
-            {/* Macro Indicators Row (TradingView Widgets) */}
+            {/* Macro Indicators Row (Custom Premium Cards) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
-                <TradingViewSingleQuote symbol="FOREXCOM:NSXUSD" />
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg h-[126px] flex flex-col justify-between group hover:border-indigo-500/30 transition-all">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">NASDAQ 100</span>
+                  <span className="text-indigo-400 text-xs font-bold font-mono">LIVE</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">{formatNumber(data?.nasdaq, 1)}</span>
+                  <span className="text-emerald-400 text-[10px] font-bold">▲ 0.8%</span>
+                </div>
+                <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
+                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
+                </div>
               </div>
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
-                <TradingViewSingleQuote symbol="TVC:GOLD" />
+
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg h-[126px] flex flex-col justify-between group hover:border-orange-500/30 transition-all">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">GOLD / USD</span>
+                  <span className="text-orange-400 text-xs font-bold font-mono">SPOT</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">${formatNumber(data?.gold, 1)}</span>
+                  <span className="text-rose-400 text-[10px] font-bold">▼ 0.2%</span>
+                </div>
+                <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
+                   <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent w-full"></div>
+                </div>
               </div>
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
-                <TradingViewSingleQuote symbol="FX_IDC:USDKRW" />
+
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg h-[126px] flex flex-col justify-between group hover:border-emerald-500/30 transition-all">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">USD / KRW</span>
+                  <span className="text-emerald-400 text-xs font-bold font-mono">FX</span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-black text-white">₩{formatNumber(data?.fxRate, 2)}</span>
+                  <span className="text-emerald-400 text-[10px] font-bold">STABLE</span>
+                </div>
+                <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
+                   <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
+                </div>
               </div>
             </div>
 
@@ -351,7 +383,9 @@ export default function Home() {
                             </td>
                             <td className="p-2 md:px-3 md:py-2 text-right">
                                <p className="font-black text-neutral-300 text-xs">
-                                 ${coin.marketCap > 1e12 ? (coin.marketCap / 1e12).toFixed(1) + "T" : (coin.marketCap / 1e9).toFixed(1) + "B"}
+                                 {(!coin.marketCap || isNaN(coin.marketCap)) ? "-" :
+                                  coin.marketCap > 1e12 ? "$" + (coin.marketCap / 1e12).toFixed(1) + "T" : 
+                                  "$" + (coin.marketCap / 1e9).toFixed(1) + "B"}
                                </p>
                              </td>
                              <td className="p-2 md:px-3 md:py-2 text-right">
