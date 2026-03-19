@@ -9,6 +9,8 @@ const Chart = dynamic(() => import("@/components/Chart"), { ssr: false });
 
 type CoinData = {
   symbol: string;
+  upbitSymbol: string;
+  binanceSymbol: string;
   krwPrice: number;
   bithumbPrice: number;
   usdtPrice: number;
@@ -309,20 +311,20 @@ export default function Home() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[850px]">
                   <thead>
-                    <tr className="bg-neutral-950/50">
-                      <th className="p-4 text-[10px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("symbol")}>
+                    <tr className="bg-neutral-950/50 sticky top-0 z-10 backdrop-blur-md">
+                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("symbol")}>
                         Asset {sortKey === "symbol" && (sortOrder === "asc" ? "↑" : "↓")}
                       </th>
-                      <th className="p-4 text-[10px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("price")}>
+                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("price")}>
                         Price ({exchange.toUpperCase()}) {sortKey === "price" && (sortOrder === "asc" ? "↑" : "↓")}
                       </th>
-                      <th className="p-4 text-[10px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right">
+                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right">
                         Binance Price
                       </th>
-                      <th className="p-4 text-[10px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("premium")}>
+                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("premium")}>
                         Premium (KIMP) {sortKey === "premium" && (sortOrder === "asc" ? "↑" : "↓")}
                       </th>
-                      <th className="p-4 text-[10px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("volume")}>
+                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("volume")}>
                         24H Vol (KRW) {sortKey === "volume" && (sortOrder === "asc" ? "↑" : "↓")}
                       </th>
                     </tr>
@@ -343,42 +345,42 @@ export default function Home() {
                       return (
                         <React.Fragment key={coin.symbol}>
                           <tr className="hover:bg-neutral-800/30 cursor-pointer group transition-all duration-150" onClick={() => setExpandedRow(expandedRow === coin.symbol ? null : coin.symbol)}>
-                            <td className="p-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-xl bg-indigo-500/5 group-hover:bg-indigo-500/10 border border-neutral-800 group-hover:border-indigo-500/20 flex items-center justify-center font-black text-indigo-400 group-hover:text-indigo-300 transition-all text-xs">{coin.symbol.charAt(0)}</div>
+                            <td className="p-2 md:px-3 md:py-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-7 h-7 rounded-lg bg-indigo-500/5 group-hover:bg-indigo-500/10 border border-neutral-800 group-hover:border-indigo-500/20 flex items-center justify-center font-black text-indigo-400 group-hover:text-indigo-300 transition-all text-[10px]">{coin.symbol.charAt(0)}</div>
                                 <div>
-                                  <span className="font-black text-white group-hover:text-indigo-300 transition-colors block leading-none mb-1">{coin.symbol}</span>
-                                  <span className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest border border-neutral-800 px-1 rounded bg-neutral-950">Active</span>
+                                  <span className="font-black text-white group-hover:text-indigo-300 transition-colors block leading-none text-xs mb-0.5">{coin.symbol}</span>
+                                  <span className="text-[8px] font-bold text-neutral-700 uppercase tracking-tighter">BINANCE</span>
                                 </div>
                               </div>
                             </td>
-                            <td className="p-4 text-right">
-                              <p className="font-black text-[15px] text-white">₩{formatNumber(price, 0)}</p>
-                              <p className={`text-[10px] font-bold mt-0.5 ${coin.upbitChangeRate > 0 ? "text-rose-500" : "text-blue-500"}`}>
+                            <td className="p-2 md:px-3 md:py-2 text-right">
+                              <p className="font-black text-xs text-white">₩{formatNumber(price, 0)}</p>
+                              <p className={`text-[9px] font-bold mt-0.5 ${coin.upbitChangeRate > 0 ? "text-rose-500" : "text-blue-500"}`}>
                                 {coin.upbitChangeRate > 0 ? "▲" : "▼"} {formatNumber(Math.abs(coin.upbitChangeRate * 100), 2)}%
                               </p>
                             </td>
-                            <td className="p-4 text-right">
-                              <p className="font-bold text-neutral-100 text-sm">${formatNumber(coin.usdtPrice, 2)}</p>
+                            <td className="p-2 md:px-3 md:py-2 text-right">
+                              <p className="font-bold text-neutral-200 text-xs">${formatNumber(coin.usdtPrice, 2)}</p>
                               <p className={`text-[9px] font-bold mt-0.5 ${coin.binanceChangeRate > 0 ? "text-emerald-500" : "text-rose-500"}`}>
                                 {coin.binanceChangeRate > 0 ? "▲" : "▼"} {formatNumber(Math.abs(coin.binanceChangeRate), 2)}%
                               </p>
                             </td>
-                            <td className="p-4 text-right">
-                              <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-black shadow-sm ${getPremiumColor(premium)}`}>
+                            <td className="p-2 md:px-3 md:py-2 text-right">
+                              <span className={`inline-block px-2 py-1 rounded-md text-[11px] font-black shadow-sm ${getPremiumColor(premium)}`}>
                                 {premium > 0 ? "+" : ""}{formatNumber(premium, 2)}%
                               </span>
                             </td>
-                            <td className="p-4 text-right">
-                              <p className="font-black text-neutral-400 text-sm">{formatNumber(coin.upbitVolumeKrw / 1e8, 0)}<span className="text-[10px] ml-0.5 text-neutral-600">억</span></p>
-                              <p className="text-[9px] font-bold text-neutral-600 uppercase mt-0.5 tracking-tighter">Approx. ${formatNumber(coin.binanceVolumeUsdt / 1e6, 1)}M</p>
+                            <td className="p-2 md:px-3 md:py-2 text-right">
+                              <p className="font-black text-neutral-400 text-xs">{formatNumber(coin.upbitVolumeKrw / 1e8, 0)}<span className="text-[9px] ml-0.5 text-neutral-600 font-bold">억</span></p>
+                              <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">VOL ${formatNumber(coin.binanceVolumeUsdt / 1e6, 1)}M</p>
                             </td>
                           </tr>
                           {expandedRow === coin.symbol && (
                             <tr>
-                              <td colSpan={5} className="bg-neutral-950 p-6 border-b border-indigo-500/10 shadow-inner">
-                                <div className="max-w-[1200px] mx-auto bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl">
-                                  <Chart symbol={coin.symbol} binanceSymbol={coin.symbol + "USDT"} />
+                              <td colSpan={5} className="p-0 border-b border-neutral-800 bg-neutral-900/40 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <div className="p-2 md:p-6">
+                                  <Chart symbol={coin.symbol} binanceSymbol={coin.binanceSymbol} />
                                 </div>
                               </td>
                             </tr>
