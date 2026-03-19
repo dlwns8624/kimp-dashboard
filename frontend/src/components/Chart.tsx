@@ -15,15 +15,19 @@ interface ChartProps {
 
 export default function Chart({ symbol, binanceSymbol }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    const containerId = `tv_chart_${symbol.toLowerCase()}_${Math.random().toString(36).substring(7)}`;
-    if (!containerRef.current) return;
+    setMounted(true);
+  }, []);
 
+  useEffect(() => {
+    if (!mounted || !containerRef.current) return;
+
+    const containerId = `tv_chart_${symbol.toLowerCase()}`;
     containerRef.current.innerHTML = `<div id="${containerId}" style="height: 500px; width: 100%;"></div>`;
 
-    let scriptLoaded = false;
     const initWidget = () => {
       if (window.TradingView && document.getElementById(containerId)) {
         try {
@@ -46,9 +50,6 @@ export default function Chart({ symbol, binanceSymbol }: ChartProps) {
           console.error("TradingView widget init failed:", e);
           setLoadError(true);
         }
-      } else if (!scriptLoaded) {
-          // Retry logic if TradingView object is not ready yet
-          setTimeout(initWidget, 500);
       }
     };
 
@@ -57,26 +58,24 @@ export default function Chart({ symbol, binanceSymbol }: ChartProps) {
       script.src = 'https://s3.tradingview.com/tv.js';
       script.async = true;
       script.id = 'tradingview-sdk';
-      script.onload = () => {
-        scriptLoaded = true;
-        initWidget();
-      };
+      script.onload = initWidget;
       script.onerror = () => setLoadError(true);
       document.head.appendChild(script);
     } else {
-      scriptLoaded = true;
       initWidget();
     }
 
     return () => {
       if (containerRef.current) containerRef.current.innerHTML = '';
     };
-  }, [symbol, binanceSymbol]);
+  }, [mounted, symbol, binanceSymbol]);
+
+  if (!mounted) return <div className="w-full h-[500px] bg-neutral-900 animate-pulse rounded-2xl" />;
 
   if (loadError) {
     return (
       <div className="w-full h-[500px] flex items-center justify-center bg-neutral-900 border border-red-500/20 rounded-2xl">
-        <p className="text-red-400 font-bold">차트를 불러오는 중 오류가 발생했습니다. (TradingView SDK)</p>
+        <p className="text-red-400 font-bold">차트를 불러오는 중 오류가 발생했습니다.</p>
       </div>
     );
   }
