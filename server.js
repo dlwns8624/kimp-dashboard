@@ -202,7 +202,44 @@ async function updatePrices() {
   });
  
   if (Object.keys(state.coins).length === 0) {
-    console.warn("[Backend] No real data fetched. Injecting development mock data for UI testing...");
+    console.warn("[Backend] Primary APIs blocked. Fallback to CryptoCompare...");
+    try {
+      const fsyms = COINS.map(c => c.symbol).join(",");
+      const fallbackUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
+      const fallbackData = await fetchJson(fallbackUrl, 5000);
+      
+      if (fallbackData && fallbackData.RAW) {
+        COINS.forEach((coin) => {
+          const raw = fallbackData.RAW[coin.symbol];
+          if (raw && raw.USD && raw.KRW) {
+            const krwPrice = raw.KRW.PRICE;
+            const usdtPrice = raw.USD.PRICE;
+            const premium = computePremium(krwPrice, usdtPrice, state.fxRate);
+            
+            state.coins[coin.symbol] = {
+              symbol: coin.symbol,
+              krwPrice,
+              usdtPrice,
+              premium,
+              bithumbPrice: krwPrice,
+              bithumbPremium: premium,
+              upbitChangeRate: raw.KRW.CHANGEPCT24HOUR / 100,
+              upbitVolumeKrw: raw.KRW.VOLUME24HOURTO,
+              binanceChangeRate: raw.USD.CHANGEPCT24HOUR,
+              binanceVolumeUsdt: raw.USD.VOLUME24HOURTO,
+              updatedAt: new Date().toISOString()
+            };
+          }
+        });
+      }
+    } catch (err) {
+      console.error("[Backend] CryptoCompare fallback failed:", err.message);
+    }
+  }
+
+  // If STILL empty (e.g. all APIs failed), use mock as last resort
+  if (Object.keys(state.coins).length === 0) {
+    console.error("[Backend] CRITICAL: All data sources failed. Injecting safety mock data.");
     COINS.forEach((coin, idx) => {
         state.coins[coin.symbol] = {
             symbol: coin.symbol,
