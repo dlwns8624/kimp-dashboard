@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
 import TradingViewSingleQuote from "@/components/TradingViewSingleQuote";
 import { WS_BASE_URL } from "@/lib/constants";
@@ -74,56 +74,7 @@ export default function Home() {
   const [notiTargetKimp, setNotiTargetKimp] = useState<number>(3);
   const lastNotified = useRef<Record<string, number>>({});
 
-  useEffect(() => {
-    const connectWs = () => {
-      const ws = new WebSocket(WS_BASE_URL);
-      wsRef.current = ws;
-
-    wsRef.current.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data);
-        const type = msg.type?.toUpperCase();
-        
-        // Handle both INIT (initial state) and UPDATE (periodic update)
-        if (type === "INIT" || type === "UPDATE") {
-          const newState = msg.state || msg.data; // Support both property names for safety
-          if (newState) {
-            setData(newState);
-            if (newState.coins) {
-               checkNotifications(newState.coins);
-            }
-          }
-        } else if (type === "CHAT") {
-          const chatMsg = msg.payload || msg.data;
-          if (chatMsg) setChatParams(prev => [...prev, chatMsg].slice(-100));
-        } else if (type === "LIQUIDATION") {
-          const liqMsg = msg.payload || msg.data;
-          if (liqMsg) setLiquidations(prev => [liqMsg, ...prev].slice(0, 50));
-        }
-      } catch (e) {
-        console.error("WS Parse Error:", e);
-      }
-    };
-
-      ws.onclose = () => {
-        console.log("WebSocket disconnected, reconnecting in 3s...");
-        setTimeout(connectWs, 3000);
-      };
-    };
-
-    connectWs();
-    return () => {
-      if (wsRef.current) wsRef.current.close();
-    };
-  }, [notiEnabled, notiTargetKimp]);
-
-  useEffect(() => {
-    if (chatBottomRef.current) {
-      chatBottomRef.current.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [chatParams]);
-
-  const checkNotifications = (coins: Record<string, CoinData>) => {
+  const checkNotifications = useCallback((coins: Record<string, CoinData>) => {
     if (!notiEnabled || !("Notification" in window) || Notification.permission !== "granted" || !coins) return;
     const now = Date.now();
     try {
@@ -138,7 +89,49 @@ export default function Home() {
     } catch (e) {
       console.error("Notification check error:", e);
     }
-  };
+  }, [notiEnabled, notiTargetKimp, exchange]);
+
+  useEffect(() => {
+    const connectWs = () => {
+      const ws = new WebSocket(WS_BASE_URL);
+      wsRef.current = ws;
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          const type = msg.type?.toUpperCase();
+          
+          if (type === "INIT" || type === "UPDATE") {
+            const newState = msg.state || msg.data;
+            if (newState) {
+              setData(newState);
+              if (newState.coins) {
+                checkNotifications(newState.coins);
+              }
+            }
+          } else if (type === "CHAT") {
+            const chatMsg = msg.payload || msg.data;
+            if (chatMsg) setChatParams(prev => [...prev, chatMsg].slice(-100));
+          } else if (type === "LIQUIDATION") {
+            const liqMsg = msg.payload || msg.data;
+            if (liqMsg) setLiquidations(prev => [liqMsg, ...prev].slice(0, 50));
+          }
+        } catch (e) {
+          console.error("WS Parse Error:", e);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket disconnected, reconnecting in 3s...");
+        setTimeout(connectWs, 3000);
+      };
+    };
+
+    connectWs();
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, [checkNotifications]);
 
   const setupNotifications = async () => {
     if (!("Notification" in window)) return;
@@ -339,7 +332,7 @@ export default function Home() {
                           </div>
                         </td>
                       </tr>
-                    ) : sortedCoins.map((coin) => {
+                    ) : sortedCoins.map((coin: CoinData) => {
                       const price = exchange === "upbit" ? coin.krwPrice : coin.bithumbPrice;
                       const premium = exchange === "upbit" ? coin.premium : coin.bithumbPremium;
                       return (

@@ -44,6 +44,7 @@ export default function NewsPage() {
 
   useEffect(() => {
     fetchNews(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadMoreNews = () => {
@@ -91,9 +92,9 @@ export default function NewsPage() {
               </p>
               <div className="flex items-center justify-between mt-4 text-xs font-semibold text-neutral-500 uppercase tracking-widest">
                 <span>{news.source_info?.name || news.source}</span>
-                <button className="text-indigo-500 hover:text-indigo-300 transition-colors flex items-center gap-1">
+                <div className="text-indigo-500 hover:text-indigo-300 transition-colors flex items-center gap-1">
                   원문 읽기 <span className="text-lg leading-none">→</span>
-                </button>
+                </div>
               </div>
             </div>
           ))
