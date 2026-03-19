@@ -15,6 +15,14 @@ const nextConfig = {
       },
     ]
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://kimp-backend-2sww.onrender.com/api/:path*',
+      },
+    ]
+  },
 };
 
 export default nextConfig;

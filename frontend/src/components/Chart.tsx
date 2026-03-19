@@ -51,26 +51,33 @@ export default function Chart({ symbol, upbitSymbol }: ChartProps) {
       wickDownColor: '#3b82f6',
     });
 
-    // Fetch Candles via our Backend Proxy to avoid 403/CORS
-    const fetchUrl = `${API_BASE_URL}/api/candles?market=${market}&count=100`;
+    // Fetch Candles via relative proxy to avoid 403/CORS
+    const fetchUrl = `/api/candles?market=${market}&count=100`;
     fetch(fetchUrl)
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          const formattedData = data.map(c => ({
-            time: (new Date(c.candle_date_time_kst).getTime() / 1000) as any,
-            open: c.opening_price,
-            high: c.high_price,
-            low: c.low_price,
-            close: c.trade_price,
-          })).sort((a, b) => a.time - b.time);
-          candleSeries.setData(formattedData);
-          chart.timeScale().fitContent();
+        if (Array.isArray(data) && candleSeries) {
+          try {
+            const formattedData = data.map(c => ({
+              time: (new Date(c.candle_date_time_kst).getTime() / 1000) as any,
+              open: c.opening_price,
+              high: c.high_price,
+              low: c.low_price,
+              close: c.trade_price,
+            })).sort((a, b) => a.time - b.time);
+            
+            if (formattedData.length > 0) {
+              candleSeries.setData(formattedData);
+              chart.timeScale().fitContent();
+            }
+          } catch (e) {
+            console.error("Format error:", e);
+          }
         }
         setLoading(false);
       })
       .catch(err => {
-        console.error("Chart fetch error", err);
+        console.error("Chart fetch error:", err);
         setLoading(false);
       });
 
