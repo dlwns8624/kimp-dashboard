@@ -206,7 +206,7 @@ export default function Home() {
           <div className="lg:col-span-3 space-y-4">
             <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-xl h-full">
               <div className="flex justify-between items-center mb-6 border-b border-neutral-800 pb-3">
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Market Intelligence</h2>
+                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Kimpga Pro Intelligence</h2>
                 <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${data ? 'bg-emerald-500' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'}`} title={data ? 'Live Connection Established' : 'Connecting to Server...'}></div>
               </div>
               
