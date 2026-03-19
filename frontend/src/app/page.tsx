@@ -259,31 +259,34 @@ export default function Home() {
           {/* MAIN CONTENT: Dashboard & List (9/12) */}
           <div className="lg:col-span-9 space-y-4">
             
-            {/* Macro Indicators Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg hover:border-neutral-700 transition-colors">
-                <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1">BTC Premium</p>
-                <div className="flex items-baseline gap-1">
-                    <p className="text-xl font-black text-white">
-                      {data?.coins["BTC"] ? formatNumber(exchange === "upbit" ? data.coins["BTC"].premium : data.coins["BTC"].bithumbPremium, 2) : "0.00"}%
-                    </p>
-                    <span className="text-[10px] text-emerald-500 font-bold">KIMP</span>
-                </div>
+            {/* Macro Indicators Row (TradingView Widgets) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
+                <iframe 
+                  scrolling="no" 
+                  allowTransparency={true} 
+                  frameBorder="0" 
+                  src="https://www.tradingview-widget.com/embed-widget-single-quote/?locale=ko#%7B%22symbol%22%3A%22FOREXCOM%3ANSXUSD%22%2C%22width%22%3A%22100%25%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%7D"
+                  className="w-full h-full"
+                ></iframe>
               </div>
-              
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg">
-                <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1">USD/KRW 환율</p>
-                <p className="text-xl font-black text-white">₩{data?.fxRate ? formatNumber(data.fxRate, 2) : "1,350.00"}</p>
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
+                <iframe 
+                  scrolling="no" 
+                  allowTransparency={true} 
+                  frameBorder="0" 
+                  src="https://www.tradingview-widget.com/embed-widget-single-quote/?locale=ko#%7B%22symbol%22%3A%22TVC%3AGOLD%22%2C%22width%22%3A%22100%25%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%7D"
+                  className="w-full h-full"
+                ></iframe>
               </div>
-
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg hidden sm:block">
-                <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1">Nasdaq 100</p>
-                <p className="text-xl font-black text-white">{data?.nasdaq ? formatNumber(data.nasdaq, 1) : "18,245.3"}</p>
-              </div>
-
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg hidden md:block">
-                <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-1">Gold (XAU)</p>
-                <p className="text-xl font-black text-white">${data?.gold ? formatNumber(data.gold, 1) : "2,154.2"}</p>
+              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
+                <iframe 
+                  scrolling="no" 
+                  allowTransparency={true} 
+                  frameBorder="0" 
+                  src="https://www.tradingview-widget.com/embed-widget-single-quote/?locale=ko#%7B%22symbol%22%3A%22FX_IDC%3AUSDKRW%22%2C%22width%22%3A%22100%25%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%7D"
+                  className="w-full h-full"
+                ></iframe>
               </div>
             </div>
 
