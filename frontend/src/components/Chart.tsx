@@ -1,125 +1,190 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { createChart, ColorType } from 'lightweight-charts';
-import { API_BASE_URL } from '@/lib/constants';
+import React, { useEffect, useRef, memo } from 'react';
 
 interface ChartProps {
   symbol: string;
   upbitSymbol?: string;
 }
 
-export default function Chart({ symbol, upbitSymbol }: ChartProps) {
-  const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<any>(null);
-  const [loading, setLoading] = useState(true);
-  const market = upbitSymbol || `KRW-${symbol}`;
+// Map our symbol names to TradingView-compatible Binance symbols
+function getTradingViewSymbol(symbol: string): string {
+  const symbolMap: Record<string, string> = {
+    BTC: "BINANCE:BTCUSDT",
+    ETH: "BINANCE:ETHUSDT",
+    XRP: "BINANCE:XRPUSDT",
+    SOL: "BINANCE:SOLUSDT",
+    DOGE: "BINANCE:DOGEUSDT",
+    ADA: "BINANCE:ADAUSDT",
+    AVAX: "BINANCE:AVAXUSDT",
+    LINK: "BINANCE:LINKUSDT",
+    DOT: "BINANCE:DOTUSDT",
+    MATIC: "BINANCE:MATICUSDT",
+    SHIB: "BINANCE:SHIBUSDT",
+    TRX: "BINANCE:TRXUSDT",
+    UNI: "BINANCE:UNIUSDT",
+    ATOM: "BINANCE:ATOMUSDT",
+    ETC: "BINANCE:ETCUSDT",
+    NEAR: "BINANCE:NEARUSDT",
+    AAVE: "BINANCE:AAVEUSDT",
+    APT: "BINANCE:APTUSDT",
+    ARB: "BINANCE:ARBUSDT",
+    OP: "BINANCE:OPUSDT",
+    SUI: "BINANCE:SUIUSDT",
+    SEI: "BINANCE:SEIUSDT",
+    STX: "BINANCE:STXUSDT",
+    IMX: "BINANCE:IMXUSDT",
+    SAND: "BINANCE:SANDUSDT",
+    MANA: "BINANCE:MANAUSDT",
+    AXS: "BINANCE:AXSUSDT",
+    HBAR: "BINANCE:HBARUSDT",
+    FTM: "BINANCE:FTMUSDT",
+    ALGO: "BINANCE:ALGOUSDT",
+    FLOW: "BINANCE:FLOWUSDT",
+    ICP: "BINANCE:ICPUSDT",
+    VET: "BINANCE:VETUSDT",
+    THETA: "BINANCE:THETAUSDT",
+    GRT: "BINANCE:GRTUSDT",
+    FIL: "BINANCE:FILUSDT",
+    EOS: "BINANCE:EOSUSDT",
+    XLM: "BINANCE:XLMUSDT",
+    IOTA: "BINANCE:IOTAUSDT",
+    NEO: "BINANCE:NEOUSDT",
+    KAVA: "BINANCE:KAVAUSDT",
+    ZIL: "BINANCE:ZILUSDT",
+    ENJ: "BINANCE:ENJUSDT",
+    CHZ: "BINANCE:CHZUSDT",
+    BAT: "BINANCE:BATUSDT",
+    QTUM: "BINANCE:QTUMUSDT",
+    ONT: "BINANCE:ONTUSDT",
+    ZRX: "BINANCE:ZRXUSDT",
+    WAVES: "BINANCE:WAVESUSDT",
+    CRV: "BINANCE:CRVUSDT",
+    SUSHI: "BINANCE:SUSHIUSDT",
+    COMP: "BINANCE:COMPUSDT",
+    YFI: "BINANCE:YFIUSDT",
+    MKR: "BINANCE:MKRUSDT",
+    SNX: "BINANCE:SNXUSDT",
+    ANKR: "BINANCE:ANKRUSDT",
+    SXP: "BINANCE:SXPUSDT",
+    KNC: "BINANCE:KNCUSDT",
+    STORJ: "BINANCE:STORJUSDT",
+    CELO: "BINANCE:CELOUSDT",
+    GMT: "BINANCE:GMTUSDT",
+    LDO: "BINANCE:LDOUSDT",
+    BLUR: "BINANCE:BLURUSDT",
+    PEPE: "BINANCE:PEPEUSDT",
+    WLD: "BINANCE:WLDUSDT",
+    TIA: "BINANCE:TIAUSDT",
+    JUP: "BINANCE:JUPUSDT",
+  };
+  return symbolMap[symbol.toUpperCase()] || `BINANCE:${symbol.toUpperCase()}USDT`;
+}
+
+function Chart({ symbol }: ChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!chartContainerRef.current) return;
+    if (!containerRef.current) return;
 
-    const handleResize = () => {
-      chartRef.current?.applyOptions({ width: chartContainerRef.current?.clientWidth });
+    // Clean up previous widget
+    if (widgetRef.current) {
+      containerRef.current.innerHTML = '';
+      widgetRef.current = null;
+    }
+
+    const tvSymbol = getTradingViewSymbol(symbol);
+
+    // Load TradingView tv.js script (same as kimpga.com)
+    const script = document.createElement('script');
+    script.src = 'https://s3.tradingview.com/tv.js';
+    script.async = true;
+    script.onload = () => {
+      if (!containerRef.current || !(window as any).TradingView) return;
+
+      widgetRef.current = new (window as any).TradingView.widget({
+        // Core settings (same approach as kimpga.com)
+        symbol: tvSymbol,
+        interval: "15",
+        timezone: "Asia/Seoul",
+        theme: "dark",
+        style: "1", // Candlestick
+        locale: "kr",
+
+        // Container
+        container_id: containerRef.current.id,
+        autosize: true,
+
+        // UI settings
+        toolbar_bg: "#0a0a0a",
+        enable_publishing: false,
+        hide_top_toolbar: false,
+        hide_legend: false,
+        save_image: false,
+        hide_volume: false,
+
+        // Features to enable/disable
+        allow_symbol_change: true,
+        withdateranges: true,
+
+        // Studies (indicators)
+        studies: ["STD;Bollinger_Bands", "STD;MACD"],
+
+        // Styling overrides
+        overrides: {
+          "mainSeriesProperties.candleStyle.upColor": "#ef4444",
+          "mainSeriesProperties.candleStyle.downColor": "#3b82f6",
+          "mainSeriesProperties.candleStyle.borderUpColor": "#ef4444",
+          "mainSeriesProperties.candleStyle.borderDownColor": "#3b82f6",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#ef4444",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#3b82f6",
+          "paneProperties.background": "#0a0a0a",
+          "paneProperties.backgroundType": "solid",
+        },
+
+        // Loading completed callback
+        loading_screen: {
+          backgroundColor: "#0a0a0a",
+          foregroundColor: "#6366f1",
+        },
+      });
     };
 
-    const chart = createChart(chartContainerRef.current, {
-      layout: {
-        background: { type: ColorType.Solid, color: 'transparent' },
-        textColor: '#d1d5db',
-      },
-      grid: {
-        vertLines: { color: 'rgba(42, 46, 57, 0.5)' },
-        horzLines: { color: 'rgba(42, 46, 57, 0.5)' },
-      },
-      width: chartContainerRef.current.clientWidth,
-      height: 400,
-      timeScale: {
-        borderColor: '#485c7b',
-        timeVisible: true,
-        secondsVisible: false,
-      },
-      handleScroll: true,
-      handleScale: true,
-    });
-
-    chartRef.current = chart;
-    const candleSeries = (chart as any).addCandlestickSeries({
-      upColor: '#ef4444',
-      downColor: '#3b82f6',
-      borderVisible: false,
-      wickUpColor: '#ef4444',
-      wickDownColor: '#3b82f6',
-    });
-
-    // Fetch Candles via relative proxy to avoid 403/CORS
-    const fetchUrl = `/api/candles?market=${market}&count=100`;
-    fetch(fetchUrl)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && candleSeries) {
-          try {
-            const formattedData = data.map(c => ({
-              time: (new Date(c.candle_date_time_kst).getTime() / 1000) as any,
-              open: c.opening_price,
-              high: c.high_price,
-              low: c.low_price,
-              close: c.trade_price,
-            })).sort((a, b) => a.time - b.time);
-            
-            if (formattedData.length > 0) {
-              candleSeries.setData(formattedData);
-              chart.timeScale().fitContent();
-            }
-          } catch (e) {
-            console.error("Format error:", e);
-          }
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error("Chart fetch error:", err);
-        setLoading(false);
-      });
-
-    window.addEventListener('resize', handleResize);
+    document.head.appendChild(script);
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      chart.remove();
+      if (containerRef.current) {
+        containerRef.current.innerHTML = '';
+      }
+      widgetRef.current = null;
+      // Note: We don't remove the script tag as it may be reused
     };
-  }, [symbol, upbitSymbol, market]);
+  }, [symbol]);
+
+  const containerId = `tv-chart-${symbol}`;
 
   return (
     <div className="w-full bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl relative">
-      <div className="p-4 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/20">
+      <div className="p-3 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/20">
         <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-xs ring-1 ring-indigo-500/20">
-                {symbol.charAt(0)}
-            </div>
-            <div>
-                <h3 className="text-white font-black text-sm leading-none mb-1">{symbol} 실시간 잉여 데이터</h3>
-                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-none">Upbit Market Feed</p>
-            </div>
+          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-xs ring-1 ring-indigo-500/20">
+            {symbol.charAt(0)}
+          </div>
+          <div>
+            <h3 className="text-white font-black text-sm leading-none mb-0.5">{symbol}/USDT</h3>
+            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest leading-none">TradingView · Binance</p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
-            <div className="px-2 py-0.5 rounded-md bg-neutral-800 text-[10px] font-bold text-neutral-400 border border-neutral-700">1H</div>
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+          <div className="px-2 py-0.5 rounded-md bg-neutral-800 text-[9px] font-bold text-neutral-400 border border-neutral-700">LIVE</div>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
         </div>
       </div>
-      
-      <div className="relative">
-        {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-neutral-950/40 backdrop-blur-sm">
-            <div className="w-8 h-8 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-          </div>
-        )}
-        <div ref={chartContainerRef} className="w-full h-[400px]" />
-      </div>
-      
-      <div className="p-3 bg-neutral-950/30 border-t border-neutral-800 flex justify-between items-center">
-        <p className="text-[10px] font-medium text-neutral-500">※ {market} 마켓 기준 데이터입니다.</p>
-        <button className="text-[10px] font-black text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest">Detail View →</button>
-      </div>
+
+      <div id={containerId} ref={containerRef} className="w-full" style={{ height: '450px' }} />
     </div>
   );
 }
+
+export default memo(Chart);
