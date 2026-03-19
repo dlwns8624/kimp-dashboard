@@ -2,250 +2,289 @@
 
 import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import dynamic from "next/dynamic";
-import TradingViewSingleQuote from "@/components/TradingViewSingleQuote";
 import { WS_BASE_URL } from "@/lib/constants";
+import { useMarketData, type CoinData } from "@/hooks/useMarketData";
 
-const Chart = dynamic(() => import("@/components/Chart"), { ssr: false });
+const Chart                  = dynamic(() => import("@/components/Chart"),                  { ssr: false });
+const WhaleWatch             = dynamic(() => import("@/components/WhaleWatch"),             { ssr: false });
 
-type CoinData = {
-  symbol: string;
-  upbitSymbol: string;
-  binanceSymbol: string;
-  krwPrice: number;
-  bithumbPrice: number;
-  usdtPrice: number;
-  premium: number;
-  bithumbPremium: number;
-  upbitChangeRate: number;
-  upbitVolumeKrw: number;
-  binanceChangeRate: number;
-  binanceVolumeUsdt: number;
-  marketCap: number;
-  updatedAt: string;
-};
 
-type GlobalMetrics = {
-  btcDominance: number;
-  ethDominance: number;
-  totalMarketCap: number;
-  totalVolume: number;
-};
-
-type FearAndGreed = {
-  value: string;
-  classification: string;
-};
-
-type StateData = {
-  fxRate: number | null;
-  fxUpdatedAt: string | null;
-  fearAndGreed: FearAndGreed | null;
-  globalMetrics: GlobalMetrics | null;
-  nasdaq: number | null;
-  gold: number | null;
-  coins: Record<string, CoinData>;
-  lastError: string | null;
-};
-
+// ─── Types (chat / liquidations only — prices come from useMarketData) ──────
 type ChatMessage = { sender: string; text: string; time: number };
 type Liquidation = { symbol: string; side: "BUY" | "SELL"; price: number; qty: number; time: number };
+type SortKey     = "symbol" | "price" | "premium" | "volume" | "marketCap";
+type SortOrder   = "asc" | "desc";
+type Exchange    = "upbit" | "bithumb";
+type RightTab    = "whale" | "liquidation";
 
-type SortKey = "symbol" | "price" | "premium" | "volume" | "marketCap";
-type SortOrder = "asc" | "desc";
-type Exchange = "upbit" | "bithumb";
+// ─── Helpers ────────────────────────────────────────────────────────────────
+function fmtKrw(v: number): string {
+  if (!v) return "-";
+  return "₩" + v.toLocaleString("ko-KR", {
+    maximumFractionDigits: v >= 100 ? 0 : v >= 1 ? 2 : 6,
+  });
+}
 
+// ─── Component ──────────────────────────────────────────────────────────────
 export default function Home() {
-  const [data, setData] = useState<StateData | null>(null);
-  const [chatParams, setChatParams] = useState<ChatMessage[]>([]);
+  // ── Market data (직접 호출 — Render 서버 슬립 무관) ──
+  const market = useMarketData();
+
+  // ── Chat / Liquidations via backend WebSocket ──
+  const [chatParams, setChatParams]     = useState<ChatMessage[]>([]);
   const [liquidations, setLiquidations] = useState<Liquidation[]>([]);
+  const [wsConnected, setWsConnected]   = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
 
-  const [exchange, setExchange] = useState<Exchange>("upbit");
-  const [sortKey, setSortKey] = useState<SortKey>("marketCap");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  // ── UI state ──
+  const [sortKey, setSortKey]         = useState<SortKey>("marketCap");
+  const [sortOrder, setSortOrder]     = useState<SortOrder>("desc");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-
-  // Chat Input
-  const [chatInput, setChatInput] = useState("");
+  const [searchTerm, setSearchTerm]   = useState("");
+  const [exchange, setExchange]       = useState<Exchange>("upbit");
+  const [rightTab, setRightTab]       = useState<RightTab>("whale");
+  const [showAllCoins, setShowAllCoins]   = useState(false);
+  const [expandedMacro, setExpandedMacro] = useState<"nasdaq" | "gold" | "fx" | null>(null);
+  // Chat popup
+  const [chatOpen, setChatOpen]       = useState(false);
+  const [chatInput, setChatInput]     = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
   const chatBottomRef = useRef<HTMLDivElement>(null);
-
-  // Notification States
-  const [notiEnabled, setNotiEnabled] = useState(false);
+  const [notiEnabled, setNotiEnabled]       = useState(false);
   const [notiTargetKimp, setNotiTargetKimp] = useState<number>(3);
   const lastNotified = useRef<Record<string, number>>({});
 
+  // ── Notifications ─────────────────────────────────────────────────────
   const checkNotifications = useCallback((coins: Record<string, CoinData>) => {
-    if (!notiEnabled || !("Notification" in window) || Notification.permission !== "granted" || !coins) return;
+    if (!notiEnabled || !("Notification" in window) || Notification.permission !== "granted") return;
     const now = Date.now();
-    try {
-      Object.values(coins).forEach((coin) => {
-        const prem = exchange === "upbit" ? coin.premium : coin.bithumbPremium;
-        const lastTime = lastNotified.current[coin.symbol] || 0;
-        if (prem >= notiTargetKimp && now - lastTime > 5 * 60 * 1000) {
-          lastNotified.current[coin.symbol] = now;
-          new Notification("Kimp Alert", { body: `${coin.symbol} premium reached ${prem.toFixed(2)}%!` });
-        }
-      });
-    } catch (e) {
-      console.error("Notification check error:", e);
-    }
-  }, [notiEnabled, notiTargetKimp, exchange]);
+    Object.values(coins).forEach(coin => {
+      const prem     = coin.premium;
+      const lastTime = lastNotified.current[coin.symbol] || 0;
+      if (prem >= notiTargetKimp && now - lastTime > 5 * 60_000) {
+        lastNotified.current[coin.symbol] = now;
+        new Notification("Kimp Alert", { body: `${coin.symbol} 업비트 김프 ${prem.toFixed(2)}% 도달!` });
+      }
+    });
+  }, [notiEnabled, notiTargetKimp]);
 
   useEffect(() => {
+    if (market.isLive) checkNotifications(market.coins);
+  }, [market.coins, market.isLive, checkNotifications]);
+
+  // ── Backend WebSocket (chat + liquidations only) ───────────────────────
+  useEffect(() => {
     const connectWs = () => {
-      const ws = new WebSocket(WS_BASE_URL);
-      wsRef.current = ws;
-
-      ws.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(event.data);
-          const type = msg.type?.toUpperCase();
-
-          if (type === "INIT" || type === "UPDATE") {
-            const newState = msg.state || msg.data;
-            if (newState) {
-              setData(newState);
-              if (newState.coins) {
-                checkNotifications(newState.coins);
+      try {
+        const ws = new WebSocket(WS_BASE_URL);
+        wsRef.current = ws;
+        ws.onopen  = () => setWsConnected(true);
+        ws.onmessage = (event) => {
+          try {
+            const msg  = JSON.parse(event.data);
+            const type = msg.type?.toUpperCase();
+            if (type === "CHAT") {
+              const m = msg.payload || msg.data;
+              if (m) {
+                setChatParams(prev => [...prev, m].slice(-100));
+                setChatOpen(open => { if (!open) setUnreadCount(n => n + 1); return open; });
               }
+            } else if (type === "LIQUIDATION") {
+              const l = msg.payload || msg.data;
+              if (l) setLiquidations(prev => [l, ...prev].slice(0, 50));
             }
-          } else if (type === "CHAT") {
-            const chatMsg = msg.payload || msg.data;
-            if (chatMsg) setChatParams(prev => [...prev, chatMsg].slice(-100));
-          } else if (type === "LIQUIDATION") {
-            const liqMsg = msg.payload || msg.data;
-            if (liqMsg) setLiquidations(prev => [liqMsg, ...prev].slice(0, 50));
-          }
-        } catch (e) {
-          console.error("WS Parse Error:", e);
-        }
-      };
-
-      ws.onclose = () => {
-        console.log("WebSocket disconnected, reconnecting in 3s...");
-        setTimeout(connectWs, 3000);
-      };
+          } catch { /* ignore */ }
+        };
+        ws.onclose = () => { setWsConnected(false); setTimeout(connectWs, 5000); };
+        ws.onerror = () => ws.close();
+      } catch { /* ignore — 서버 슬립 중이어도 가격은 훅에서 직접 로드됨 */ }
     };
-
     connectWs();
-    return () => {
-      if (wsRef.current) wsRef.current.close();
-    };
-  }, [checkNotifications]);
+    return () => wsRef.current?.close();
+  }, []);
 
   const setupNotifications = async () => {
     if (!("Notification" in window)) return;
     if (Notification.permission === "granted") {
       setNotiEnabled(!notiEnabled);
     } else if (Notification.permission !== "denied") {
-      const permission = await Notification.requestPermission();
-      if (permission === "granted") setNotiEnabled(true);
+      const p = await Notification.requestPermission();
+      if (p === "granted") setNotiEnabled(true);
     }
   };
 
   const sendChat = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!chatInput.trim() || !wsRef.current) return;
-    wsRef.current.send(JSON.stringify({ type: "CHAT_MSG", text: chatInput, sender: "User_" + Math.floor(Math.random() * 1000) }));
+    if (!chatInput.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    wsRef.current.send(JSON.stringify({
+      type: "CHAT_MSG", text: chatInput,
+      sender: "User_" + Math.floor(Math.random() * 1000),
+    }));
     setChatInput("");
   };
 
-  const formatNumber = (val: any, decimals = 0) => {
-    if (val === null || val === undefined || isNaN(val)) return "-";
-    return Number(val).toLocaleString("ko-KR", {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
+  const toggleChat = () => {
+    setChatOpen(o => {
+      if (!o) {
+        setUnreadCount(0);
+        // 열 때 맨 아래로 스크롤
+        setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+      }
+      return !o;
     });
   };
 
-  const getPremiumColor = (premium: number) => {
-    if (premium > 0) return "text-red-500 bg-red-500/10 border border-red-500/20";
-    if (premium < 0) return "text-blue-500 bg-blue-500/10 border border-blue-500/20";
-    return "text-gray-400 bg-gray-500/10 border border-gray-500/20";
+  // 채팅창 열려있을 때 새 메시지 오면 자동 스크롤
+  useEffect(() => {
+    if (chatOpen) {
+      chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatParams, chatOpen]);
+
+  // ── Formatters ───────────────────────────────────────────────────────────
+  const fmtNum = (v: number | null | undefined, d = 0) => {
+    if (v === null || v === undefined || isNaN(v)) return "-";
+    return Number(v).toLocaleString("ko-KR", { minimumFractionDigits: d, maximumFractionDigits: d });
   };
 
+  const getPremiumBadge = (prem: number) => {
+    const label = `${prem > 0 ? "+" : ""}${prem.toFixed(2)}%`;
+    if (prem > 3)  return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-rose-500/15 text-rose-400 border border-rose-500/20">{label}</span>;
+    if (prem > 0)  return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-orange-500/10 text-orange-400 border border-orange-500/20">{label}</span>;
+    if (prem < -1) return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-blue-500/15 text-blue-400 border border-blue-500/20">{label}</span>;
+    if (prem < 0)  return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-sky-500/10 text-sky-400 border border-sky-500/20">{label}</span>;
+    return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-neutral-800 text-neutral-500 border border-neutral-700">{label}</span>;
+  };
+
+  // ── Sorting ──────────────────────────────────────────────────────────────
   const handleSort = (key: SortKey) => {
-    if (sortKey === key) setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    if (sortKey === key) setSortOrder(o => o === "asc" ? "desc" : "asc");
     else { setSortKey(key); setSortOrder("desc"); }
   };
 
   const sortedCoins = useMemo(() => {
-    if (!data?.coins || Object.keys(data.coins).length === 0) return [];
-    let filtered = Object.values(data.coins) as CoinData[];
+    let filtered = Object.values(market.coins);
     if (searchTerm) {
-      filtered = filtered.filter((c: CoinData) => c.symbol.toLowerCase().includes(searchTerm.toLowerCase()));
+      filtered = filtered.filter(c => c.symbol.toLowerCase().includes(searchTerm.toLowerCase()));
     }
-    return filtered.sort((a: CoinData, b: CoinData) => {
-      let valA: any, valB: any;
-      if (sortKey === "symbol") { valA = a.symbol; valB = b.symbol; }
-      else if (sortKey === "price") { valA = exchange === "upbit" ? a.krwPrice : a.bithumbPrice; valB = exchange === "upbit" ? b.krwPrice : b.bithumbPrice; }
-      else if (sortKey === "premium") { valA = exchange === "upbit" ? a.premium : a.bithumbPremium; valB = exchange === "upbit" ? b.premium : b.bithumbPremium; }
-      else if (sortKey === "marketCap") { valA = a.marketCap || 0; valB = b.marketCap || 0; }
-      else { valA = a.upbitVolumeKrw; valB = b.upbitVolumeKrw; }
-
-      if (valA < valB) return sortOrder === "asc" ? -1 : 1;
-      if (valA > valB) return sortOrder === "asc" ? 1 : -1;
+    const isUpbit = exchange === "upbit";
+    return filtered.sort((a, b) => {
+      let vA: number | string = 0, vB: number | string = 0;
+      if      (sortKey === "symbol")    { vA = a.symbol; vB = b.symbol; }
+      else if (sortKey === "price")     { vA = isUpbit ? a.krwPrice : a.bithumbPrice;      vB = isUpbit ? b.krwPrice : b.bithumbPrice; }
+      else if (sortKey === "premium")   { vA = isUpbit ? a.premium  : a.bithumbPremium;    vB = isUpbit ? b.premium  : b.bithumbPremium; }
+      else if (sortKey === "marketCap") { vA = a.marketCap ?? 0; vB = b.marketCap ?? 0; }
+      else                              { vA = a.upbitVolumeKrw;  vB = b.upbitVolumeKrw; }
+      if (vA < vB) return sortOrder === "asc" ? -1 : 1;
+      if (vA > vB) return sortOrder === "asc" ?  1 : -1;
       return 0;
     });
-  }, [data?.coins, sortKey, sortOrder, exchange, searchTerm]);
+  }, [market.coins, sortKey, sortOrder, searchTerm, exchange]);
 
+  const isUpbit  = exchange === "upbit";
+  const exColor  = isUpbit ? "#818cf8" : "#fb923c";
+  const exBg     = isUpbit ? "rgba(99,102,241,0.05)"  : "rgba(249,115,22,0.05)";
+  const exBorder = isUpbit ? "rgba(99,102,241,0.2)"   : "rgba(249,115,22,0.2)";
+
+  // ─── Render ──────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-300 font-sans selection:bg-indigo-500/30 p-4">
-      <div className="max-w-[1600px] mx-auto space-y-6">
+    <div className="min-h-screen bg-neutral-950 text-neutral-300 font-sans selection:bg-indigo-500/30 p-1.5 sm:p-2.5 md:p-4">
+      <div className="max-w-[1600px] mx-auto space-y-2.5 md:space-y-6">
 
-        {/* TOP GRID: Stats & Table */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ── TOP GRID ─────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 md:gap-6">
 
-          {/* LEFT SIDEBAR: Global Markers (3/12) */}
-          <div className="lg:col-span-3 space-y-4">
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 shadow-xl h-full">
-              <div className="flex justify-between items-center mb-6 border-b border-neutral-800 pb-3">
-                <h2 className="text-xs font-black uppercase tracking-[0.2em] text-neutral-500">Kimpga Pro Intelligence</h2>
-                <div className={`w-2.5 h-2.5 rounded-full animate-pulse ${data ? 'bg-emerald-500' : 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'}`} title={data ? 'Live Connection Established' : 'Connecting to Server...'}></div>
+          {/* LEFT SIDEBAR (3/12) — 모바일에선 코인 테이블 아래로 */}
+          <div className="lg:col-span-3 order-2 lg:order-1">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-2xl p-3 md:p-5 shadow-xl h-full">
+              <div className="flex justify-between items-center mb-3 md:mb-5 border-b border-neutral-800 pb-2 md:pb-3">
+                <h2 className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-neutral-500">시장 지표</h2>
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-2 h-2 rounded-full animate-pulse ${market.isLive ? "bg-emerald-500" : "bg-amber-500"}`} />
+                  <span className="text-[9px] font-bold text-neutral-600">
+                    {market.isLive ? "LIVE" : "로딩 중..."}
+                  </span>
+                </div>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-1.5">Global Market Cap</p>
-                  <p className="text-2xl font-bold text-neutral-100 tracking-tight">${formatNumber((data?.globalMetrics?.totalMarketCap || 0) / 1e9, 2)}B</p>
-                  <p className="text-[10px] text-neutral-500 mt-1">24h Vol: ${formatNumber((data?.globalMetrics?.totalVolume || 0) / 1e9, 2)}B</p>
+              <div className="space-y-2 md:space-y-4">
+                {/* 모바일: 글로벌 + 도미넌스 가로로 나란히 */}
+                <div className="grid grid-cols-2 md:block gap-2">
+                {/* 글로벌 시가총액 */}
+                <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
+                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">🌐 글로벌 시총</p>
+                  <p className="text-base md:text-xl font-black text-white tracking-tight">
+                    ${market.globalMetrics ? (market.globalMetrics.totalMarketCap / 1e12).toFixed(2) + "T" : "-"}
+                  </p>
+                  <p className="text-[9px] text-neutral-500 mt-0.5 md:mt-1">
+                    Vol <span className="text-neutral-400 font-bold">${fmtNum((market.globalMetrics?.totalVolume ?? 0) / 1e9, 0)}B</span>
+                  </p>
                 </div>
 
-                <div className="pt-4 border-t border-neutral-800/50">
-                  <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-2.5">Bitcoin Dominance</p>
-                  <div className="flex items-end justify-between mb-2">
-                    <p className="text-2xl font-black text-indigo-400">{formatNumber(data?.globalMetrics?.btcDominance, 2)}%</p>
+                {/* BTC 도미넌스 */}
+                <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
+                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">₿ BTC 도미</p>
+                  <div className="flex items-baseline justify-between mb-1.5 md:mb-2">
+                    <p className="text-base md:text-xl font-black text-orange-400">{fmtNum(market.globalMetrics?.btcDominance, 2)}%</p>
+                    <p className="text-[9px] text-neutral-600">ETH {fmtNum(market.globalMetrics?.ethDominance, 1)}%</p>
                   </div>
                   <div className="w-full bg-neutral-800 rounded-full h-1.5 overflow-hidden">
-                    <div className="bg-indigo-500 h-full rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(99,102,241,0.4)]" style={{ width: `${data?.globalMetrics?.btcDominance || 0}%` }}></div>
+                    <div className="h-full rounded-full transition-all duration-1000"
+                      style={{ width: `${market.globalMetrics?.btcDominance ?? 0}%`, background: "linear-gradient(90deg,#f97316,#fb923c)" }} />
                   </div>
                 </div>
+                </div>{/* /grid-cols-2 */}
 
-                <div className="pt-4 border-t border-neutral-800/50">
-                  <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-wider mb-2">Fear & Greed</p>
-                  <div className="flex items-center gap-3">
-                    <div className={`text-3xl font-black ${Number(data?.fearAndGreed?.value) > 70 ? 'text-emerald-400' : Number(data?.fearAndGreed?.value) > 50 ? 'text-lime-400' : 'text-rose-400'}`}>
-                      {data?.fearAndGreed ? data.fearAndGreed.value : "---"}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-white uppercase">{data?.fearAndGreed?.classification || "Loading..."}</p>
-                      <p className="text-[9px] text-neutral-500">Market Sentiment</p>
-                    </div>
-                  </div>
+                {/* 공포·탐욕 + 환율 — 모바일 가로 배치 */}
+                <div className="grid grid-cols-2 md:block gap-2">
+                <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
+                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">😨 공포·탐욕</p>
+                  {market.fearAndGreed ? (() => {
+                    const val   = Number(market.fearAndGreed!.value);
+                    const color = val >= 75 ? "#10b981" : val >= 55 ? "#84cc16" : val >= 45 ? "#eab308" : val >= 25 ? "#f97316" : "#ef4444";
+                    const label = val >= 75 ? "극도 탐욕" : val >= 55 ? "탐욕" : val >= 45 ? "중립" : val >= 25 ? "공포" : "극도 공포";
+                    return (
+                      <div className="flex items-center gap-2">
+                        <div className="relative w-10 h-10 md:w-14 md:h-14 shrink-0">
+                          <svg viewBox="0 0 36 36" className="w-10 h-10 md:w-14 md:h-14 -rotate-90">
+                            <circle cx="18" cy="18" r="15.9" fill="none" stroke="#262626" strokeWidth="3" />
+                            <circle cx="18" cy="18" r="15.9" fill="none" stroke={color} strokeWidth="3"
+                              strokeDasharray={`${val} ${100 - val}`} strokeLinecap="round" />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-xs md:text-base font-black" style={{ color }}>{val}</span>
+                        </div>
+                        <div>
+                          <p className="text-xs md:text-sm font-black text-white">{label}</p>
+                          <p className="text-[8px] md:text-[9px] text-neutral-600 mt-0.5">0=공포 · 100=탐욕</p>
+                        </div>
+                      </div>
+                    );
+                  })() : <p className="text-neutral-600 text-xs">로딩 중...</p>}
                 </div>
 
-                <div className="pt-6 border-t border-neutral-800 mt-4">
-                  <div className="flex justify-between items-center mb-4">
-                    <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Kimp Alert</p>
-                    <button onClick={setupNotifications} className={`relative inline-flex h-5 w-10 rounded-full transition-all duration-300 ${notiEnabled ? 'bg-indigo-500' : 'bg-neutral-800 border border-neutral-700'}`}>
-                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform mt-[3px] ml-[3px] shadow-sm ${notiEnabled ? 'translate-x-5' : 'translate-x-0'}`}></span>
+                {/* 환율 */}
+                <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
+                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-1.5">💱 USD/KRW</p>
+                  <p className="text-base md:text-xl font-black text-emerald-400">₩{fmtNum(market.fxRate, 1)}</p>
+                </div>
+                </div>{/* /grid-cols-2 */}
+
+                {/* 김프 알림 */}
+                <div className="pt-1 border-t border-neutral-800">
+                  <div className="flex justify-between items-center mb-2 md:mb-3">
+                    <p className="text-[9px] md:text-[10px] font-black text-neutral-500 uppercase tracking-widest">🔔 김프 알림</p>
+                    <button onClick={setupNotifications}
+                      className={`relative inline-flex h-5 w-10 rounded-full transition-all duration-300 ${notiEnabled ? "bg-indigo-500" : "bg-neutral-800 border border-neutral-700"}`}>
+                      <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform mt-[3px] ml-[3px] shadow-sm ${notiEnabled ? "translate-x-5" : "translate-x-0"}`} />
                     </button>
                   </div>
                   <div className="flex items-center justify-between bg-neutral-950/50 p-2.5 rounded-xl border border-neutral-800">
-                    <span className="text-[11px] font-bold text-neutral-400 uppercase">Threshold</span>
+                    <span className="text-[11px] font-bold text-neutral-400 uppercase">기준 김프</span>
                     <div className="flex items-center gap-1.5">
-                      <input type="number" value={notiTargetKimp} onChange={(e) => setNotiTargetKimp(Number(e.target.value))} className="w-12 bg-transparent text-white font-bold text-right outline-none focus:text-indigo-400" disabled={!notiEnabled} />
+                      <input type="number" value={notiTargetKimp}
+                        onChange={e => setNotiTargetKimp(Number(e.target.value))}
+                        className="w-12 bg-transparent text-white font-bold text-right outline-none focus:text-indigo-400"
+                        disabled={!notiEnabled} />
                       <span className="text-[11px] font-bold text-neutral-600">%</span>
                     </div>
                   </div>
@@ -254,160 +293,267 @@ export default function Home() {
             </div>
           </div>
 
-          {/* MAIN CONTENT: Dashboard & List (9/12) */}
-          <div className="lg:col-span-9 space-y-4">
+          {/* MAIN CONTENT (9/12) — 모바일에선 먼저 표시 */}
+          <div className="lg:col-span-9 order-1 lg:order-2 space-y-2.5 md:space-y-4">
 
-            {/* Macro Indicators Row (Custom Premium Cards) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg h-[126px] flex flex-col justify-between group hover:border-indigo-500/30 transition-all">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">NASDAQ 100</span>
-                  <span className="text-indigo-400 text-xs font-bold font-mono">LIVE</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{formatNumber(data?.nasdaq, 1)}</span>
-                  <span className="text-emerald-400 text-[10px] font-bold">▲ 0.8%</span>
-                </div>
-                <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
-                </div>
-              </div>
-
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg h-[126px] flex flex-col justify-between group hover:border-orange-500/30 transition-all">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">GOLD / USD</span>
-                  <span className="text-orange-400 text-xs font-bold font-mono">SPOT</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">${formatNumber(data?.gold, 1)}</span>
-                  <span className="text-rose-400 text-[10px] font-bold">▼ 0.2%</span>
-                </div>
-                <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent w-full"></div>
-                </div>
-              </div>
-
-              <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 shadow-lg h-[126px] flex flex-col justify-between group hover:border-emerald-500/30 transition-all">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">USD / KRW</span>
-                  <span className="text-emerald-400 text-xs font-bold font-mono">FX</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">₩{formatNumber(data?.fxRate, 2)}</span>
-                  <span className="text-emerald-400 text-[10px] font-bold">STABLE</span>
-                </div>
-                <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Assets Table Container */}
-            <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-xl bg-opacity-80">
-
-              {/* Table Toolbar */}
-              <div className="p-4 border-b border-neutral-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-neutral-900/40">
-                <div className="flex items-center gap-2">
-                  <div className="flex bg-neutral-950 p-1 rounded-xl border border-neutral-800">
-                    <button
-                      onClick={() => setExchange("upbit")}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${exchange === "upbit" ? "bg-indigo-500 text-white shadow-lg" : "text-neutral-500 hover:text-neutral-300"}`}
-                    >UPBIT</button>
-                    <button
-                      onClick={() => setExchange("bithumb")}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${exchange === "bithumb" ? "bg-orange-500 text-white shadow-lg" : "text-neutral-500 hover:text-neutral-300"}`}
-                    >BITHUMB</button>
+            {/* Macro Cards — 모바일도 항상 3열 */}
+            {(() => {
+              const CARDS = [
+                {
+                  key: "nasdaq" as const,
+                  label: "NASDAQ 100", shortLabel: "NQ100",
+                  value: fmtNum(market.nasdaq, 1),
+                  sub: "선물", tagColor: "text-indigo-400",
+                  accent: "hover:border-indigo-500/30", grad: "from-indigo-500/10",
+                  tvSymbol: "NASDAQ:NDX",
+                },
+                {
+                  key: "gold" as const,
+                  label: "GOLD / USD", shortLabel: "GOLD",
+                  value: "$" + fmtNum(market.gold, 1),
+                  sub: "현물", tagColor: "text-orange-400",
+                  accent: "hover:border-orange-500/30", grad: "from-orange-500/10",
+                  tvSymbol: "TVC:GOLD",
+                },
+                {
+                  key: "fx" as const,
+                  label: "USD / KRW", shortLabel: "USDKRW",
+                  value: "₩" + fmtNum(market.fxRate, 2),
+                  sub: "환율", tagColor: "text-emerald-400",
+                  accent: "hover:border-emerald-500/30", grad: "from-emerald-500/10",
+                  tvSymbol: "FX:USDKRW",
+                },
+              ];
+              return (
+                <>
+                  <div className="grid grid-cols-3 gap-2 md:gap-4">
+                    {CARDS.map(card => {
+                      const isOpen = expandedMacro === card.key;
+                      return (
+                        <button
+                          key={card.key}
+                          onClick={() => setExpandedMacro(isOpen ? null : card.key)}
+                          className={`bg-neutral-900 border rounded-xl md:rounded-2xl p-2 md:p-4 shadow-lg text-left transition-all group ${card.accent} ${isOpen ? "border-indigo-500/40 bg-neutral-800/60" : "border-neutral-800"}`}
+                        >
+                          {/* 레이블 */}
+                          <div className="flex justify-between items-start mb-1 md:mb-2">
+                            <span className="text-[8px] md:text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-tight">
+                              <span className="hidden sm:inline">{card.label}</span>
+                              <span className="sm:hidden">{card.shortLabel}</span>
+                            </span>
+                            <span className={`text-[8px] md:text-[10px] font-bold ${card.tagColor}`}>
+                              {isOpen ? "▲" : "▼"}
+                            </span>
+                          </div>
+                          {/* 가격 */}
+                          <div className="flex items-baseline gap-1 flex-wrap">
+                            <span className="text-sm sm:text-lg md:text-2xl font-black text-white leading-none">{card.value}</span>
+                          </div>
+                          <p className={`text-[8px] md:text-[10px] font-bold mt-0.5 md:mt-1 ${card.tagColor}`}>{card.sub}</p>
+                          {/* 그라데이션 바 (데스크탑만) */}
+                          <div className="hidden md:block w-full bg-neutral-950 h-6 rounded-lg border border-neutral-800/50 overflow-hidden relative mt-2">
+                            <div className={`absolute inset-0 bg-gradient-to-r ${card.grad} to-transparent`} />
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div className="h-4 w-px bg-neutral-800 mx-2"></div>
-                  <span className="text-[10px] font-black text-neutral-500 uppercase">Vs Binance USDT</span>
-                </div>
 
-                <div className="relative w-full md:w-72 group">
-                  <input
-                    type="text"
-                    placeholder="심볼/코인명 검색..."
-                    className="w-full bg-neutral-950 text-xs text-white pl-10 pr-4 py-2.5 rounded-xl border border-neutral-800 outline-none focus:border-indigo-500/50 transition-all font-bold placeholder:font-medium placeholder:text-neutral-600"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-600 group-focus-within:text-indigo-500 transition-colors text-sm">🔍</span>
+                  {/* TradingView 차트 확장 패널 */}
+                  {expandedMacro && (() => {
+                    const card = CARDS.find(c => c.key === expandedMacro)!;
+                    return (
+                      <div className="bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-2xl overflow-hidden shadow-xl">
+                        <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-neutral-800 bg-neutral-950/40">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${card.tagColor}`}>{card.label}</span>
+                            <span className="text-[9px] text-neutral-600 font-mono">{card.tvSymbol}</span>
+                          </div>
+                          <button onClick={() => setExpandedMacro(null)}
+                            className="text-neutral-600 hover:text-white text-xs font-black px-2 py-1 rounded-lg hover:bg-neutral-800 transition-all">✕</button>
+                        </div>
+                        <Chart
+                          symbol={card.key === "nasdaq" ? "NDX" : card.key === "gold" ? "GOLD" : "USDKRW"}
+                          tvSymbol={card.tvSymbol}
+                          displayName={card.label}
+                          subName="TradingView · Macro"
+                        />
+                      </div>
+                    );
+                  })()}
+                </>
+              );
+            })()}
+
+            {/* Assets Table */}
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl">
+
+              {/* Toolbar */}
+              <div className="px-2.5 py-2 md:px-4 md:py-3 border-b border-neutral-800 flex flex-wrap justify-between items-center gap-2 bg-neutral-900/40">
+                <div className="flex items-center gap-3">
+                  <div className="flex bg-neutral-950 p-0.5 rounded-xl border border-neutral-800">
+                    <button onClick={() => setExchange("upbit")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${exchange === "upbit" ? "bg-indigo-600 text-white shadow" : "text-neutral-500"}`}>
+                      업비트
+                    </button>
+                    <button onClick={() => setExchange("bithumb")}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${exchange === "bithumb" ? "bg-orange-500 text-white shadow" : "text-neutral-500"}`}>
+                      빗썸
+                    </button>
+                  </div>
+                  {/* 데이터 출처 표시 */}
+                  <span className="hidden md:flex items-center gap-1.5 text-[10px] font-bold text-neutral-600">
+                    김프 기준:
+                    <span className="text-yellow-500 font-black">Binance</span>
+                    <span className="text-neutral-700">(트레이딩뷰)</span>
+                  </span>
+                </div>
+                <div className="relative w-full sm:w-56 group">
+                  <input type="text" placeholder="코인 검색..."
+                    className="w-full bg-neutral-950 text-xs text-white pl-9 pr-4 py-2 rounded-xl border border-neutral-800 outline-none focus:border-indigo-500/50 transition-all font-bold placeholder:font-medium placeholder:text-neutral-600"
+                    value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600 group-focus-within:text-indigo-500 transition-colors text-sm">🔍</span>
                 </div>
               </div>
 
-              {/* Responsive Table Wrapper */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[850px]">
+              {/* Table — 모바일에서 overflow 없이 꽉 차게 */}
+              <div className="md:overflow-x-auto">
+                <table className="w-full text-left border-collapse table-fixed md:table-auto">
                   <thead>
-                    <tr className="bg-neutral-950/50 sticky top-0 z-10 backdrop-blur-md">
-                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("symbol")}>
-                        Asset {sortKey === "symbol" && (sortOrder === "asc" ? "↑" : "↓")}
+                    <tr className="bg-neutral-950/40">
+                      <th className="w-[30%] md:w-auto px-2 md:px-3 py-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 cursor-pointer hover:text-neutral-300"
+                        onClick={() => handleSort("symbol")}>
+                        코인 {sortKey === "symbol" && <span style={{ color: exColor }}>{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
-                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("marketCap")}>
-                        Mkt Cap {sortKey === "marketCap" && (sortOrder === "asc" ? "↑" : "↓")}
+                      <th className="hidden md:table-cell px-3 py-2 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
+                        onClick={() => handleSort("marketCap")}>
+                        시가총액 {sortKey === "marketCap" && <span className="text-indigo-400">{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
-                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("price")}>
-                        Price ({exchange.toUpperCase()}) {sortKey === "price" && (sortOrder === "asc" ? "↑" : "↓")}
+                      {/* 바이낸스 기준가: 데스크탑 lg+ 에서만 표시 */}
+                      <th className="hidden lg:table-cell px-3 py-2 text-[9px] font-black uppercase tracking-widest text-yellow-600 border-b border-neutral-800 text-right">
+                        바이낸스 기준가
                       </th>
-                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("premium")}>
-                        Premium (KIMP) {sortKey === "premium" && (sortOrder === "asc" ? "↑" : "↓")}
+                      <th className="w-[35%] md:w-auto px-2 md:px-3 py-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
+                        style={{ color: isUpbit ? "#818cf8" : "#fb923c" }}
+                        onClick={() => handleSort("price")}>
+                        시세 {sortKey === "price" && <span>{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
-                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("volume")}>
-                        24H Vol {sortKey === "volume" && (sortOrder === "asc" ? "↑" : "↓")}
+                      <th className="w-[20%] md:w-auto px-2 md:px-3 py-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
+                        style={{ color: isUpbit ? "#818cf8" : "#fb923c" }}
+                        onClick={() => handleSort("premium")}>
+                        김프 {sortKey === "premium" && <span>{sortOrder === "asc" ? "↑" : "↓"}</span>}
+                      </th>
+                      <th className="w-[15%] md:w-auto px-1 md:px-3 py-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right">
+                        등락
+                      </th>
+                      <th className="hidden md:table-cell px-3 py-2 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
+                        onClick={() => handleSort("volume")}>
+                        거래량 {sortKey === "volume" && <span className="text-indigo-400">{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-neutral-800/40">
+                  <tbody className="divide-y divide-neutral-800/30">
                     {sortedCoins.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="p-32 text-center text-neutral-600 bg-neutral-900/20">
-                          <div className="flex flex-col items-center gap-5">
-                            <div className="w-12 h-12 border-[3px] border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                            <p className="font-bold text-xs uppercase tracking-[0.2em]">{data ? "Aggregating Market Data..." : "Connecting To Real-time Cluster..."}</p>
+                        <td colSpan={8} className="p-20 text-center">
+                          <div className="flex flex-col items-center gap-4">
+                            <div className="w-10 h-10 border-[3px] border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                            <p className="text-xs font-bold text-neutral-600 uppercase tracking-widest">
+                              Binance · Upbit · Bithumb 연결 중...
+                            </p>
                           </div>
                         </td>
                       </tr>
-                    ) : sortedCoins.map((coin: CoinData) => {
-                      const price = exchange === "upbit" ? coin.krwPrice : coin.bithumbPrice;
-                      const premium = exchange === "upbit" ? coin.premium : coin.bithumbPremium;
+                    ) : (showAllCoins ? sortedCoins : sortedCoins.slice(0, 15)).map((coin: CoinData) => {
+                      const price      = isUpbit ? coin.krwPrice    : coin.bithumbPrice;
+                      const premium    = isUpbit ? coin.premium      : coin.bithumbPremium;
+                      const changeRate = isUpbit ? coin.upbitChangeRate : coin.binanceChangeRate / 100;
+                      const ok         = price > 0;
+                      const isExpanded = expandedRow === coin.symbol;
+
                       return (
                         <React.Fragment key={coin.symbol}>
-                          <tr className="hover:bg-neutral-800/30 cursor-pointer group transition-all duration-150" onClick={() => setExpandedRow(expandedRow === coin.symbol ? null : coin.symbol)}>
-                            <td className="p-2 md:px-3 md:py-2">
-                              <div className="flex items-center gap-2">
-                                <div className="w-7 h-7 rounded-lg bg-indigo-500/5 group-hover:bg-indigo-500/10 border border-neutral-800 group-hover:border-indigo-500/20 flex items-center justify-center font-black text-indigo-400 group-hover:text-indigo-300 transition-all text-[10px]">{coin.symbol.charAt(0)}</div>
-                                <div>
-                                  <span className="font-black text-white group-hover:text-indigo-300 transition-colors block leading-none text-xs mb-0.5">{coin.symbol}</span>
-                                  <span className="text-[8px] font-bold text-neutral-700 uppercase tracking-tighter">BINANCE</span>
+                          <tr className={`cursor-pointer transition-all duration-150 ${isExpanded ? "bg-neutral-800/20" : "hover:bg-neutral-800/15"}`}
+                            onClick={() => setExpandedRow(isExpanded ? null : coin.symbol)}>
+
+                            {/* 코인 */}
+                            <td className="px-2 md:px-3 py-2 md:py-2.5">
+                              <div className="flex items-center gap-1.5 md:gap-2">
+                                <div className="w-6 h-6 md:w-7 md:h-7 rounded-md md:rounded-lg border flex items-center justify-center font-black text-[9px] md:text-[10px] shrink-0"
+                                  style={{ borderColor: exBorder, color: exColor, backgroundColor: exBg }}>
+                                  {coin.symbol.charAt(0)}
+                                </div>
+                                <div className="min-w-0">
+                                  <span className="font-black text-white text-[10px] md:text-xs block leading-none truncate">{coin.symbol}</span>
+                                  <span className="text-[7px] md:text-[8px] font-bold text-neutral-700">/KRW</span>
                                 </div>
                               </div>
                             </td>
-                            <td className="p-2 md:px-3 md:py-2 text-right">
-                              <p className="font-black text-neutral-300 text-xs">
-                                {(!coin.marketCap || isNaN(coin.marketCap)) ? "-" :
-                                  coin.marketCap > 1e12 ? "$" + (coin.marketCap / 1e12).toFixed(1) + "T" :
-                                    "$" + (coin.marketCap / 1e9).toFixed(1) + "B"}
+
+                            {/* 시가총액 (desktop only) */}
+                            <td className="hidden md:table-cell px-3 py-2.5 text-right">
+                              <p className="font-black text-neutral-400 text-xs">
+                                {!coin.marketCap || isNaN(coin.marketCap) ? "-"
+                                  : coin.marketCap > 1e12 ? "$" + (coin.marketCap / 1e12).toFixed(1) + "T"
+                                  : "$" + (coin.marketCap / 1e9).toFixed(1) + "B"}
                               </p>
                             </td>
-                            <td className="p-2 md:px-3 md:py-2 text-right">
-                              <p className="font-black text-xs text-white">₩{formatNumber(price, 0)}</p>
-                              <p className={`text-[9px] font-bold mt-0.5 ${coin.upbitChangeRate > 0 ? "text-rose-500" : "text-blue-500"}`}>
-                                {coin.upbitChangeRate > 0 ? "▲" : "▼"} {formatNumber(Math.abs(coin.upbitChangeRate * 100), 2)}%
+
+                            {/* 바이낸스 기준가 (lg+ only) */}
+                            <td className="hidden lg:table-cell px-3 py-2.5 text-right">
+                              <p className="text-xs font-black text-yellow-600/80">{fmtKrw(coin.binanceKrwEquiv)}</p>
+                              <p className="text-[9px] text-neutral-700 font-mono mt-0.5">
+                                ${coin.binanceUsdPrice.toLocaleString("en-US", { maximumFractionDigits: coin.binanceUsdPrice >= 1 ? 2 : 6 })}
                               </p>
                             </td>
-                            <td className="p-2 md:px-3 md:py-2 text-right">
-                              <span className={`inline-block px-2 py-1 rounded-md text-[11px] font-black shadow-sm ${getPremiumColor(premium)}`}>
-                                {premium > 0 ? "+" : ""}{formatNumber(premium, 2)}%
+
+                            {/* 시세 */}
+                            <td className="px-2 md:px-3 py-2 md:py-2.5 text-right">
+                              {ok ? (
+                                <p className="font-black text-white text-xs md:text-sm leading-none">{fmtKrw(price)}</p>
+                              ) : (
+                                <span className="text-[9px] text-neutral-700 font-bold">미상장</span>
+                              )}
+                            </td>
+
+                            {/* 김프 */}
+                            <td className="px-1 md:px-3 py-2 md:py-2.5 text-right">
+                              {ok && premium != null ? (
+                                <span className={`inline-block px-1 md:px-2 py-0.5 rounded text-[9px] md:text-[11px] font-black ${
+                                  premium > 3  ? "bg-rose-500/15 text-rose-400 border border-rose-500/20" :
+                                  premium > 0  ? "bg-orange-500/10 text-orange-400 border border-orange-500/20" :
+                                  premium < -1 ? "bg-blue-500/15 text-blue-400 border border-blue-500/20" :
+                                  premium < 0  ? "bg-sky-500/10 text-sky-400 border border-sky-500/20" :
+                                  "bg-neutral-800 text-neutral-500 border border-neutral-700"
+                                }`}>
+                                  {premium > 0 ? "+" : ""}{premium.toFixed(2)}%
+                                </span>
+                              ) : <span className="text-neutral-700 text-xs">-</span>}
+                            </td>
+
+                            {/* 등락률 */}
+                            <td className="px-1 md:px-3 py-2 md:py-2.5 text-right">
+                              <span className={`text-[10px] md:text-sm font-black ${changeRate > 0 ? "text-rose-500" : changeRate < 0 ? "text-blue-500" : "text-neutral-500"}`}>
+                                {changeRate > 0 ? "▲" : changeRate < 0 ? "▼" : ""}
+                                {Math.abs(changeRate * 100).toFixed(1)}%
                               </span>
-                              <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">${formatNumber(coin.usdtPrice, 2)}</p>
                             </td>
-                            <td className="p-2 md:px-3 md:py-2 text-right">
-                              <p className="font-black text-neutral-400 text-xs">{formatNumber(coin.upbitVolumeKrw / 1e8, 0)}<span className="text-[9px] ml-0.5 text-neutral-600 font-bold">억</span></p>
-                              <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">BIN VOL ${formatNumber(coin.binanceVolumeUsdt / 1e6, 1)}M</p>
+
+                            {/* 거래량 (desktop only) */}
+                            <td className="hidden md:table-cell px-3 py-2.5 text-right">
+                              <p className="font-black text-neutral-400 text-xs">
+                                {coin.upbitVolumeKrw > 0 ? fmtNum(coin.upbitVolumeKrw / 1e8, 0) + "억" : "-"}
+                              </p>
+                              <p className="text-[8px] font-bold text-neutral-700 mt-0.5">
+                                BIN ${fmtNum(coin.binanceVolumeUsdt / 1e6, 0)}M
+                              </p>
                             </td>
                           </tr>
-                          {expandedRow === coin.symbol && (
+
+                          {/* 차트 확장 */}
+                          {isExpanded && (
                             <tr>
-                              <td colSpan={5} className="p-0 border-b border-neutral-800 bg-neutral-900/40 animate-in fade-in slide-in-from-top-2 duration-300">
+                              <td colSpan={8} className="p-0 border-b border-neutral-800 bg-neutral-900/40">
                                 <div className="p-2 md:p-6">
                                   <Chart symbol={coin.symbol} upbitSymbol={coin.upbitSymbol} />
                                 </div>
@@ -420,89 +566,180 @@ export default function Home() {
                   </tbody>
                 </table>
               </div>
+
+              {/* 더 보기 / 접기 버튼 */}
+              {sortedCoins.length > 15 && (
+                <div className="border-t border-neutral-800 bg-neutral-950/20">
+                  <button
+                    onClick={() => setShowAllCoins(s => !s)}
+                    className="w-full py-3 flex items-center justify-center gap-2 text-xs font-black text-neutral-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all group"
+                  >
+                    {showAllCoins ? (
+                      <>
+                        <span className="text-base leading-none group-hover:scale-110 transition-transform">▲</span>
+                        <span>상위 15개만 보기</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-base leading-none group-hover:scale-110 transition-transform">▼</span>
+                        <span>전체 {sortedCoins.length}개 코인 더 보기</span>
+                        <span className="bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded text-[9px] font-black">
+                          +{sortedCoins.length - 15}
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Footer */}
+              <div className="px-4 py-2 border-t border-neutral-800 bg-neutral-950/30 flex justify-between items-center">
+                <p className="text-[10px] text-neutral-600 font-bold">
+                  {showAllCoins ? sortedCoins.length : Math.min(15, sortedCoins.length)}개 표시 / 전체 {sortedCoins.length}개
+                </p>
+                {market.updatedAt && (
+                  <p className="text-[10px] text-neutral-700">{new Date(market.updatedAt).toLocaleTimeString("ko-KR")}</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* BOTTOM SECTION: Social & Execution (12/12) */}
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {/* Real-time Interaction Panel */}
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl flex flex-col h-[500px] shadow-2xl overflow-hidden bg-opacity-60 backdrop-blur-md">
-            <div className="p-4 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/60">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                <span className="text-xs font-black uppercase tracking-widest text-neutral-200 underline decoration-indigo-500 decoration-2 underline-offset-4">Tribe Live Feed</span>
+        {/* ── BOTTOM SECTION: Whale + Liquidations (full width) ─── */}
+        <div className="grid grid-cols-1 gap-6">
+          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl flex flex-col h-[520px] overflow-hidden">
+            <div className="flex border-b border-neutral-800 bg-neutral-900/60 shrink-0">
+              <button onClick={() => setRightTab("whale")}
+                className={`flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${rightTab === "whale" ? "text-indigo-400 border-indigo-500 bg-indigo-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
+                🐋 고래 거래
+              </button>
+              <button onClick={() => setRightTab("liquidation")}
+                className={`flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${rightTab === "liquidation" ? "text-rose-400 border-rose-500 bg-rose-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
+                🔥 청산 감지
+              </button>
+              <div className="ml-auto flex items-center px-4">
+                <span className="text-[9px] font-bold text-neutral-600 font-mono">Real-time · Binance</span>
               </div>
-              <span className="text-[9px] font-black bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-full uppercase tracking-tighter">Verified Node</span>
             </div>
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-thin scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
-              {chatParams.map((msg, i) => (
-                <div key={i} className="flex items-start gap-3 group">
-                  <div className="w-7 h-7 rounded-lg bg-neutral-800 border border-neutral-700 flex-shrink-0 flex items-center justify-center text-[10px] font-black text-neutral-500 group-hover:border-indigo-500/30 group-hover:text-indigo-400 transition-all">
-                    {msg.sender.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="flex items-baseline gap-2 mb-0.5">
-                      <span className="font-bold text-xs text-neutral-100">{msg.sender}</span>
-                      <span className="text-[9px] text-neutral-600 font-mono italic">{new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                    </div>
-                    <p className="text-sm text-neutral-400 leading-relaxed break-all selection:bg-indigo-500 selection:text-white">{msg.text}</p>
-                  </div>
-                </div>
-              ))}
-              <div ref={chatBottomRef} />
-            </div>
-            <form onSubmit={sendChat} className="p-4 border-t border-neutral-800 bg-neutral-950/40 flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="시장 정황을 공유하세요..."
-                className="flex-1 bg-neutral-900/50 text-sm text-white outline-none px-4 py-2.5 rounded-xl border border-neutral-800 focus:border-indigo-500/50 transition-all font-medium"
-                value={chatInput}
-                onChange={e => setChatInput(e.target.value)}
-              />
-              <button type="submit" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black px-6 py-2.5 rounded-xl transition-all shadow-[0_4px_12px_rgba(79,70,229,0.3)] hover:translate-y-[-1px] active:translate-y-0">SEND</button>
-            </form>
-          </div>
 
-          {/* Binance Whale Watch / Liquidations */}
-          <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl flex-1 overflow-hidden flex flex-col bg-opacity-60 backdrop-blur-md">
-            <div className="p-4 border-b border-neutral-800 flex justify-between items-center bg-neutral-900/60">
-              <div className="flex items-center gap-2">
-                <span className="text-rose-500 text-sm">🔥</span>
-                <span className="text-xs font-black uppercase tracking-widest text-neutral-200">Whale Liquidation Watch</span>
-              </div>
-              <span className="text-[10px] font-bold text-neutral-500 font-mono">Real-time Stream</span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700">
-              {liquidations.length === 0 ? (
-                <div className="text-center py-20 flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 border-2 border-neutral-800 border-t-rose-500/50 rounded-full animate-spin"></div>
-                  <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">Waiting for major liquidation events...</p>
-                </div>
+            <div className="flex-1 min-h-0 overflow-hidden">
+              {rightTab === "whale" ? (
+                <WhaleWatch />
               ) : (
-                liquidations.map((liq, i) => (
-                  <div key={i} className="flex justify-between items-center bg-neutral-950/20 hover:bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/40 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg text-[10px] font-black uppercase tracking-tighter ${liq.side === "SELL" ? "bg-rose-500/10 text-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.1)]" : "bg-emerald-500/10 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.1)]"}`}>
-                        {liq.side === "SELL" ? "LONG REKT" : "SHORT REKT"}
+                <div className="h-full overflow-y-auto p-4 space-y-2">
+                  {liquidations.length === 0 ? (
+                    <div className="text-center py-20 flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-2 border-neutral-800 border-t-rose-500/50 rounded-full animate-spin" />
+                      <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">
+                        Waiting for liquidation events...
+                      </p>
+                    </div>
+                  ) : liquidations.map((liq, i) => (
+                    <div key={i} className="flex justify-between items-center bg-neutral-950/20 hover:bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/40 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg text-[10px] font-black uppercase tracking-tighter ${liq.side === "SELL" ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"}`}>
+                          {liq.side === "SELL" ? "LONG REKT" : "SHORT REKT"}
+                        </div>
+                        <div>
+                          <p className="font-black text-xs text-white leading-tight">{liq.symbol}</p>
+                          <p className="text-[9px] text-neutral-600 font-bold">{new Date(liq.time).toLocaleTimeString()}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-black text-xs text-white leading-tight">{liq.symbol}</p>
-                        <p className="text-[9px] text-neutral-600 font-bold uppercase tracking-tighter">{new Date(liq.time).toLocaleTimeString()}</p>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-white mb-0.5">${fmtNum(liq.price * liq.qty, 0)}</p>
+                        <p className="text-[9px] font-medium text-neutral-500">Price: ${fmtNum(liq.price, 2)}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-black text-white mb-0.5">${formatNumber(liq.price * liq.qty, 0)}</p>
-                      <p className="text-[9px] font-medium text-neutral-500 tracking-tight">Price: ${formatNumber(liq.price, 2)}</p>
-                    </div>
-                  </div>
-                ))
+                  ))}
+                </div>
               )}
             </div>
           </div>
         </div>
 
       </div>
+
+      {/* ── FLOATING CHAT WIDGET ─────────────────────────────────── */}
+      {/* Chat Popup */}
+      {chatOpen && (
+        <div className="fixed bottom-20 right-4 z-50 w-[340px] sm:w-[380px] h-[480px] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden">
+          {/* Header */}
+          <div className="p-3.5 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/80 backdrop-blur-sm shrink-0">
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${wsConnected ? "bg-emerald-500 animate-pulse" : "bg-neutral-600"}`} />
+              <span className="text-xs font-black uppercase tracking-widest text-neutral-100">Tribe Live Chat</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${wsConnected ? "bg-indigo-500/20 text-indigo-400" : "bg-neutral-800 text-neutral-500"}`}>
+                {wsConnected ? "LIVE" : "재연결 중..."}
+              </span>
+              <button onClick={toggleChat}
+                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all text-xs font-black">
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {chatParams.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-2 text-neutral-700">
+                <span className="text-2xl">💬</span>
+                <p className="text-[10px] font-bold">시장 정황을 공유해보세요</p>
+              </div>
+            ) : chatParams.map((msg, i) => (
+              <div key={i} className="flex items-start gap-2.5 group">
+                <div className="w-6 h-6 rounded-lg bg-neutral-800 border border-neutral-700 flex-shrink-0 flex items-center justify-center text-[9px] font-black text-neutral-500 group-hover:border-indigo-500/30 transition-all">
+                  {msg.sender.charAt(0)}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-1.5 mb-0.5">
+                    <span className="font-bold text-[10px] text-neutral-100">{msg.sender}</span>
+                    <span className="text-[8px] text-neutral-600 font-mono">
+                      {new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-400 leading-relaxed break-all">{msg.text}</p>
+                </div>
+              </div>
+            ))}
+            <div ref={chatBottomRef} />
+          </div>
+
+          {/* Input */}
+          <form onSubmit={sendChat} className="p-3 border-t border-neutral-800 bg-neutral-950/60 flex items-center gap-2 shrink-0">
+            <input type="text" placeholder="메시지 입력..."
+              className="flex-1 bg-neutral-800/80 text-xs text-white outline-none px-3 py-2 rounded-xl border border-neutral-700 focus:border-indigo-500/60 transition-all font-medium placeholder:text-neutral-600"
+              value={chatInput} onChange={e => setChatInput(e.target.value)} />
+            <button type="submit"
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black px-3 py-2 rounded-xl transition-all">
+              전송
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Chat Toggle Button */}
+      <button
+        onClick={toggleChat}
+        className={`fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
+          chatOpen
+            ? "bg-neutral-700 hover:bg-neutral-600"
+            : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/30"
+        }`}
+      >
+        {chatOpen ? (
+          <span className="text-white text-lg font-black">✕</span>
+        ) : (
+          <span className="text-xl">💬</span>
+        )}
+        {/* 안읽음 뱃지 */}
+        {!chatOpen && unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 border-2 border-neutral-950">
+            {unreadCount > 99 ? "99+" : unreadCount}
+          </span>
+        )}
+      </button>
     </div>
   );
 }

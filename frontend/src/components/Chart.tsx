@@ -1,188 +1,148 @@
 "use client";
 
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 
 interface ChartProps {
-  symbol: string;
+  symbol: string;          // 표시용 심볼 (e.g. "BTC", "NASDAQ 100", "Gold")
   upbitSymbol?: string;
+  tvSymbol?: string;       // 직접 TradingView 심볼 지정 (e.g. "NASDAQ:NDX")
+  displayName?: string;    // 헤더 표시 이름 (지정 안 하면 symbol 사용)
+  subName?: string;        // 헤더 서브 이름 (기본: "TradingView · Binance")
 }
 
-// Map our symbol names to TradingView-compatible Binance symbols
-function getTradingViewSymbol(symbol: string): string {
-  const symbolMap: Record<string, string> = {
-    BTC: "BINANCE:BTCUSDT",
-    ETH: "BINANCE:ETHUSDT",
-    XRP: "BINANCE:XRPUSDT",
-    SOL: "BINANCE:SOLUSDT",
-    DOGE: "BINANCE:DOGEUSDT",
-    ADA: "BINANCE:ADAUSDT",
-    AVAX: "BINANCE:AVAXUSDT",
-    LINK: "BINANCE:LINKUSDT",
-    DOT: "BINANCE:DOTUSDT",
-    MATIC: "BINANCE:MATICUSDT",
-    SHIB: "BINANCE:SHIBUSDT",
-    TRX: "BINANCE:TRXUSDT",
-    UNI: "BINANCE:UNIUSDT",
-    ATOM: "BINANCE:ATOMUSDT",
-    ETC: "BINANCE:ETCUSDT",
-    NEAR: "BINANCE:NEARUSDT",
-    AAVE: "BINANCE:AAVEUSDT",
-    APT: "BINANCE:APTUSDT",
-    ARB: "BINANCE:ARBUSDT",
-    OP: "BINANCE:OPUSDT",
-    SUI: "BINANCE:SUIUSDT",
-    SEI: "BINANCE:SEIUSDT",
-    STX: "BINANCE:STXUSDT",
-    IMX: "BINANCE:IMXUSDT",
-    SAND: "BINANCE:SANDUSDT",
-    MANA: "BINANCE:MANAUSDT",
-    AXS: "BINANCE:AXSUSDT",
-    HBAR: "BINANCE:HBARUSDT",
-    FTM: "BINANCE:FTMUSDT",
-    ALGO: "BINANCE:ALGOUSDT",
-    FLOW: "BINANCE:FLOWUSDT",
-    ICP: "BINANCE:ICPUSDT",
-    VET: "BINANCE:VETUSDT",
-    THETA: "BINANCE:THETAUSDT",
-    GRT: "BINANCE:GRTUSDT",
-    FIL: "BINANCE:FILUSDT",
-    EOS: "BINANCE:EOSUSDT",
-    XLM: "BINANCE:XLMUSDT",
-    IOTA: "BINANCE:IOTAUSDT",
-    NEO: "BINANCE:NEOUSDT",
-    KAVA: "BINANCE:KAVAUSDT",
-    ZIL: "BINANCE:ZILUSDT",
-    ENJ: "BINANCE:ENJUSDT",
-    CHZ: "BINANCE:CHZUSDT",
-    BAT: "BINANCE:BATUSDT",
-    QTUM: "BINANCE:QTUMUSDT",
-    ONT: "BINANCE:ONTUSDT",
-    ZRX: "BINANCE:ZRXUSDT",
-    WAVES: "BINANCE:WAVESUSDT",
-    CRV: "BINANCE:CRVUSDT",
-    SUSHI: "BINANCE:SUSHIUSDT",
-    COMP: "BINANCE:COMPUSDT",
-    YFI: "BINANCE:YFIUSDT",
-    MKR: "BINANCE:MKRUSDT",
-    SNX: "BINANCE:SNXUSDT",
-    ANKR: "BINANCE:ANKRUSDT",
-    SXP: "BINANCE:SXPUSDT",
-    KNC: "BINANCE:KNCUSDT",
-    STORJ: "BINANCE:STORJUSDT",
-    CELO: "BINANCE:CELOUSDT",
-    GMT: "BINANCE:GMTUSDT",
-    LDO: "BINANCE:LDOUSDT",
-    BLUR: "BINANCE:BLURUSDT",
-    PEPE: "BINANCE:PEPEUSDT",
-    WLD: "BINANCE:WLDUSDT",
-    TIA: "BINANCE:TIAUSDT",
-    JUP: "BINANCE:JUPUSDT",
-  };
-  return symbolMap[symbol.toUpperCase()] || `BINANCE:${symbol.toUpperCase()}USDT`;
+// 코인 심볼 → TradingView Binance 심볼 매핑
+const COIN_MAP: Record<string, string> = {
+  BTC: "BINANCE:BTCUSDT", ETH: "BINANCE:ETHUSDT", XRP: "BINANCE:XRPUSDT",
+  SOL: "BINANCE:SOLUSDT", DOGE: "BINANCE:DOGEUSDT", ADA: "BINANCE:ADAUSDT",
+  AVAX: "BINANCE:AVAXUSDT", LINK: "BINANCE:LINKUSDT", DOT: "BINANCE:DOTUSDT",
+  MATIC: "BINANCE:MATICUSDT", SHIB: "BINANCE:SHIBUSDT", TRX: "BINANCE:TRXUSDT",
+  UNI: "BINANCE:UNIUSDT", ATOM: "BINANCE:ATOMUSDT", ETC: "BINANCE:ETCUSDT",
+  NEAR: "BINANCE:NEARUSDT", AAVE: "BINANCE:AAVEUSDT", APT: "BINANCE:APTUSDT",
+  ARB: "BINANCE:ARBUSDT", OP: "BINANCE:OPUSDT", SUI: "BINANCE:SUIUSDT",
+  SEI: "BINANCE:SEIUSDT", STX: "BINANCE:STXUSDT", IMX: "BINANCE:IMXUSDT",
+  SAND: "BINANCE:SANDUSDT", MANA: "BINANCE:MANAUSDT", HBAR: "BINANCE:HBARUSDT",
+  ALGO: "BINANCE:ALGOUSDT", FLOW: "BINANCE:FLOWUSDT", ICP: "BINANCE:ICPUSDT",
+  VET: "BINANCE:VETUSDT", THETA: "BINANCE:THETAUSDT", GRT: "BINANCE:GRTUSDT",
+  FIL: "BINANCE:FILUSDT", KAVA: "BINANCE:KAVAUSDT", ZIL: "BINANCE:ZILUSDT",
+  ENJ: "BINANCE:ENJUSDT", CHZ: "BINANCE:CHZUSDT", BAT: "BINANCE:BATUSDT",
+  QTUM: "BINANCE:QTUMUSDT", ZRX: "BINANCE:ZRXUSDT", CRV: "BINANCE:CRVUSDT",
+  MKR: "BINANCE:MKRUSDT", SNX: "BINANCE:SNXUSDT", ANKR: "BINANCE:ANKRUSDT",
+  BLUR: "BINANCE:BLURUSDT", PEPE: "BINANCE:PEPEUSDT", WLD: "BINANCE:WLDUSDT",
+  TIA: "BINANCE:TIAUSDT", JUP: "BINANCE:JUPUSDT", BONK: "BINANCE:BONKUSDT",
+  ORDI: "BINANCE:ORDIUSDT", MINA: "BINANCE:MINAUSDT", ASTR: "BINANCE:ASTRUSDT",
+  GLM: "BINANCE:GLMUSDT", MASK: "BINANCE:MASKUSDT",
+  // 매크로 지수 / FX
+  NDX:    "NASDAQ:NDX",
+  NQ:     "CME_MINI:NQ1!",
+  GOLD:   "TVC:GOLD",
+  USDKRW: "FX:USDKRW",
+};
+
+function getTvSymbol(symbol: string, tvSymbolOverride?: string): string {
+  if (tvSymbolOverride) return tvSymbolOverride;
+  return COIN_MAP[symbol.toUpperCase()] ?? `BINANCE:${symbol.toUpperCase()}USDT`;
 }
 
-function Chart({ symbol }: ChartProps) {
+function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const widgetRef = useRef<any>(null);
+  const widgetRef    = useRef<unknown>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
+  // 반응형 크기 감지
   useEffect(() => {
-    if (!containerRef.current) return;
+    const update = () => setIsMobile(window.innerWidth < 768);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
 
-    // Clean up previous widget
-    if (widgetRef.current) {
-      containerRef.current.innerHTML = '';
-      widgetRef.current = null;
-    }
+  // TradingView 위젯 생성
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-    const tvSymbol = getTradingViewSymbol(symbol);
+    if (widgetRef.current) { el.innerHTML = ""; widgetRef.current = null; }
 
-    // Load TradingView tv.js script (same as kimpga.com)
-    const script = document.createElement('script');
-    script.src = 'https://s3.tradingview.com/tv.js';
-    script.async = true;
+    const tvSym   = getTvSymbol(symbol, tvSymbolProp);
+    const mobile  = window.innerWidth < 768;
+
+    const script  = document.createElement("script");
+    script.src    = "https://s3.tradingview.com/tv.js";
+    script.async  = true;
     script.onload = () => {
-      if (!containerRef.current || !(window as any).TradingView) return;
-
-      widgetRef.current = new (window as any).TradingView.widget({
-        // Core settings (same approach as kimpga.com)
-        symbol: tvSymbol,
-        interval: "15",
-        timezone: "Asia/Seoul",
-        theme: "dark",
-        style: "1", // Candlestick
-        locale: "kr",
-
-        // Container
-        container_id: containerRef.current.id,
-        autosize: true,
-
-        // UI settings
-        toolbar_bg: "#0a0a0a",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if (!el || !(window as any).TradingView) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const TV = (window as any).TradingView;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      widgetRef.current = new TV.widget({
+        symbol:           tvSym,
+        interval:         mobile ? "60" : "15",
+        timezone:         "Asia/Seoul",
+        theme:            "dark",
+        style:            "1",
+        locale:           "kr",
+        container_id:     el.id,
+        autosize:         true,
+        toolbar_bg:       "#0a0a0a",
         enable_publishing: false,
-        hide_top_toolbar: false,
-        hide_legend: false,
-        save_image: false,
-        hide_volume: false,
 
-        // Features to enable/disable
-        allow_symbol_change: true,
-        withdateranges: true,
+        // 모바일: 최대한 심플하게
+        hide_top_toolbar:  mobile,
+        hide_legend:       mobile,
+        hide_side_toolbar: mobile,
+        withdateranges:    !mobile,
+        save_image:        false,
+        hide_volume:       mobile,
 
-        // Studies (indicators)
-        studies: ["STD;Bollinger_Bands", "STD;MACD"],
+        // 모바일에선 인디케이터 없이 (차트 영역 최대화)
+        studies: mobile ? [] : ["STD;Bollinger_Bands", "STD;MACD"],
 
-        // Styling overrides
         overrides: {
-          "mainSeriesProperties.candleStyle.upColor": "#ef4444",
-          "mainSeriesProperties.candleStyle.downColor": "#3b82f6",
-          "mainSeriesProperties.candleStyle.borderUpColor": "#ef4444",
-          "mainSeriesProperties.candleStyle.borderDownColor": "#3b82f6",
-          "mainSeriesProperties.candleStyle.wickUpColor": "#ef4444",
-          "mainSeriesProperties.candleStyle.wickDownColor": "#3b82f6",
-          "paneProperties.background": "#0a0a0a",
+          "mainSeriesProperties.candleStyle.upColor":        "#ef4444",
+          "mainSeriesProperties.candleStyle.downColor":      "#3b82f6",
+          "mainSeriesProperties.candleStyle.borderUpColor":  "#ef4444",
+          "mainSeriesProperties.candleStyle.borderDownColor":"#3b82f6",
+          "mainSeriesProperties.candleStyle.wickUpColor":    "#ef4444",
+          "mainSeriesProperties.candleStyle.wickDownColor":  "#3b82f6",
+          "paneProperties.background":     "#0a0a0a",
           "paneProperties.backgroundType": "solid",
         },
-
-        // Loading completed callback
-        loading_screen: {
-          backgroundColor: "#0a0a0a",
-          foregroundColor: "#6366f1",
-        },
+        loading_screen: { backgroundColor: "#0a0a0a", foregroundColor: "#6366f1" },
       });
     };
 
     document.head.appendChild(script);
+    return () => { if (el) { el.innerHTML = ""; } widgetRef.current = null; };
+  // isMobile 바뀔 때도 위젯 재생성
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [symbol, tvSymbolProp, isMobile]);
 
-    return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = '';
-      }
-      widgetRef.current = null;
-      // Note: We don't remove the script tag as it may be reused
-    };
-  }, [symbol]);
-
-  const containerId = `tv-chart-${symbol}`;
+  const containerId   = `tv-chart-${symbol}-${Date.now() % 10000}`;
+  const chartHeight   = isMobile ? 260 : 450;
+  const headerDisplay = displayName ?? symbol;
+  const headerSub     = subName ?? "TradingView · Binance";
 
   return (
-    <div className="w-full bg-neutral-900/50 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl relative">
-      <div className="p-3 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/20">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-xs ring-1 ring-indigo-500/20">
-            {symbol.charAt(0)}
+    <div className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl relative">
+      {/* 헤더 */}
+      <div className="px-3 py-2 md:p-3 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/20">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 md:w-7 md:h-7 rounded-md md:rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-[9px] md:text-xs ring-1 ring-indigo-500/20">
+            {headerDisplay.charAt(0)}
           </div>
           <div>
-            <h3 className="text-white font-black text-sm leading-none mb-0.5">{symbol}/USDT</h3>
-            <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest leading-none">TradingView · Binance</p>
+            <h3 className="text-white font-black text-xs md:text-sm leading-none mb-0.5">{headerDisplay}</h3>
+            <p className="text-[8px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest leading-none">{headerSub}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="px-2 py-0.5 rounded-md bg-neutral-800 text-[9px] font-bold text-neutral-400 border border-neutral-700">LIVE</div>
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+        <div className="flex items-center gap-1.5 md:gap-2">
+          <div className="px-1.5 md:px-2 py-0.5 rounded-md bg-neutral-800 text-[8px] md:text-[9px] font-bold text-neutral-400 border border-neutral-700">LIVE</div>
+          <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse" />
         </div>
       </div>
 
-      <div id={containerId} ref={containerRef} className="w-full" style={{ height: '450px' }} />
+      <div id={containerId} ref={containerRef} className="w-full" style={{ height: chartHeight }} />
     </div>
   );
 }
