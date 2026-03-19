@@ -28,8 +28,6 @@ export default function LongShortPage() {
   const cards = [
     { label: "전체 글로벌 롱/숏 (Binance General)", long: stats?.global ? getSafeRatio(stats.global.longAccount) : 50, short: stats?.global ? getSafeRatio(stats.global.shortAccount) : 50 },
     { label: "바이낸스 탑 트레이더 (Binance Top)", long: stats?.top ? getSafeRatio(stats.top.longAccount) : 53.2, short: stats?.top ? getSafeRatio(stats.top.shortAccount) : 46.8 },
-    { label: "바이비트 추정 (Bybit Mock)", long: 49.12, short: 50.88 },
-    { label: "OKX 추정 (OKX Mock)", long: 55.40, short: 44.60 },
   ];
 
   return (

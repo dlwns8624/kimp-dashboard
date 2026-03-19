@@ -265,8 +265,10 @@ export default function Home() {
                   <span className="text-indigo-400 text-xs font-bold font-mono">LIVE</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">{formatNumber(data?.nasdaq, 1)}</span>
-                  <span className="text-emerald-400 text-[10px] font-bold">▲ 0.8%</span>
+                  <span className="text-2xl font-black text-white">{data?.nasdaq ? formatNumber(data.nasdaq, 1) : "---"}</span>
+                  <span className={`${(data?.nasdaq || 0) > 0 ? 'text-emerald-400' : 'text-rose-400'} text-[10px] font-bold`}>
+                    {data?.nasdaq ? "REAL-TIME" : "LOADING..."}
+                  </span>
                 </div>
                 <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent w-full"></div>
@@ -279,8 +281,10 @@ export default function Home() {
                   <span className="text-orange-400 text-xs font-bold font-mono">SPOT</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-black text-white">${formatNumber(data?.gold, 1)}</span>
-                  <span className="text-rose-400 text-[10px] font-bold">▼ 0.2%</span>
+                  <span className="text-2xl font-black text-white">{data?.gold ? `$${formatNumber(data.gold, 1)}` : "---"}</span>
+                  <span className={`${(data?.gold || 0) > 0 ? 'text-emerald-400' : 'text-rose-400'} text-[10px] font-bold`}>
+                    {data?.gold ? "SPOT" : "LOADING..."}
+                  </span>
                 </div>
                 <div className="w-full bg-neutral-950 h-8 rounded-lg border border-neutral-800/50 overflow-hidden relative">
                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 to-transparent w-full"></div>

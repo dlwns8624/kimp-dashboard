@@ -89,9 +89,9 @@ const state = {
   fxRate: null,
   fxUpdatedAt: null,
   fearAndGreed: null,
-  globalMetrics: null, // dominances, marketcap etc
-  nasdaq: 18245.3,
-  gold: 2154.2,
+  globalMetrics: null,
+  nasdaq: null,
+  gold: null,
   coins: {},
   updatedAt: null,
   lastError: null
@@ -355,25 +355,10 @@ async function updatePrices() {
     }
   }
 
-  // If STILL empty (e.g. all APIs failed), use mock as last resort
+  // If STILL empty (e.g. all APIs failed), we simply log the criticality. 
+  // No mock data injection to avoid misleading the user with stale prices.
   if (Object.keys(state.coins).length === 0) {
-    console.error("[Backend] CRITICAL: All data sources failed. Injecting safety mock data.");
-    COINS.forEach((coin, idx) => {
-        state.coins[coin.symbol] = {
-            symbol: coin.symbol,
-            krwPrice: 90000000 + (idx * 10000),
-            usdtPrice: 65000 + (idx * 100),
-            premium: 2.5 + (idx * 0.1),
-            bithumbPrice: 89000000 + (idx * 10000),
-            bithumbPremium: 2.3 + (idx * 0.1),
-            upbitChangeRate: 0.05,
-            upbitVolumeKrw: 5000000000,
-            binanceChangeRate: 0.04,
-            binanceVolumeUsdt: 1000000,
-            marketCap: 1000000000,
-            updatedAt: new Date().toISOString()
-        };
-    });
+    console.error("[Backend] CRITICAL: All data sources failed. Waiting for next interval...");
   }
 
   console.log(`[Backend] State updated with ${Object.keys(state.coins).length} coins.`);
