@@ -20,6 +20,7 @@ type CoinData = {
   upbitVolumeKrw: number;
   binanceChangeRate: number;
   binanceVolumeUsdt: number;
+  marketCap: number;
   updatedAt: string;
 };
 
@@ -49,7 +50,7 @@ type StateData = {
 type ChatMessage = { sender: string; text: string; time: number };
 type Liquidation = { symbol: string; side: "BUY" | "SELL"; price: number; qty: number; time: number };
 
-type SortKey = "symbol" | "price" | "premium" | "volume";
+type SortKey = "symbol" | "price" | "premium" | "volume" | "marketCap";
 type SortOrder = "asc" | "desc";
 type Exchange = "upbit" | "bithumb";
 
@@ -60,7 +61,7 @@ export default function Home() {
   const wsRef = useRef<WebSocket | null>(null);
   
   const [exchange, setExchange] = useState<Exchange>("upbit");
-  const [sortKey, setSortKey] = useState<SortKey>("premium");
+  const [sortKey, setSortKey] = useState<SortKey>("marketCap");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -171,15 +172,16 @@ export default function Home() {
 
   const sortedCoins = useMemo(() => {
     if (!data?.coins || Object.keys(data.coins).length === 0) return [];
-    let filtered = Object.values(data.coins);
+    let filtered = Object.values(data.coins) as CoinData[];
     if (searchTerm) {
-        filtered = filtered.filter(c => c.symbol.toLowerCase().includes(searchTerm.toLowerCase()));
+        filtered = filtered.filter((c: CoinData) => c.symbol.toLowerCase().includes(searchTerm.toLowerCase()));
     }
-    return filtered.sort((a, b) => {
-      let valA, valB;
+    return filtered.sort((a: CoinData, b: CoinData) => {
+      let valA: any, valB: any;
       if (sortKey === "symbol") { valA = a.symbol; valB = b.symbol; }
       else if (sortKey === "price") { valA = exchange === "upbit" ? a.krwPrice : a.bithumbPrice; valB = exchange === "upbit" ? b.krwPrice : b.bithumbPrice; }
       else if (sortKey === "premium") { valA = exchange === "upbit" ? a.premium : a.bithumbPremium; valB = exchange === "upbit" ? b.premium : b.bithumbPremium; }
+      else if (sortKey === "marketCap") { valA = a.marketCap || 0; valB = b.marketCap || 0; }
       else { valA = a.upbitVolumeKrw; valB = b.upbitVolumeKrw; }
       
       if (valA < valB) return sortOrder === "asc" ? -1 : 1;
@@ -308,17 +310,17 @@ export default function Home() {
                       <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("symbol")}>
                         Asset {sortKey === "symbol" && (sortOrder === "asc" ? "↑" : "↓")}
                       </th>
+                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("marketCap")}>
+                        Mkt Cap {sortKey === "marketCap" && (sortOrder === "asc" ? "↑" : "↓")}
+                      </th>
                       <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("price")}>
                         Price ({exchange.toUpperCase()}) {sortKey === "price" && (sortOrder === "asc" ? "↑" : "↓")}
-                      </th>
-                      <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right">
-                        Binance Price
                       </th>
                       <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("premium")}>
                         Premium (KIMP) {sortKey === "premium" && (sortOrder === "asc" ? "↑" : "↓")}
                       </th>
                       <th className="p-2 md:p-3 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300 transition-colors" onClick={() => handleSort("volume")}>
-                        24H Vol (KRW) {sortKey === "volume" && (sortOrder === "asc" ? "↑" : "↓")}
+                        24H Vol {sortKey === "volume" && (sortOrder === "asc" ? "↑" : "↓")}
                       </th>
                     </tr>
                   </thead>
@@ -348,30 +350,30 @@ export default function Home() {
                               </div>
                             </td>
                             <td className="p-2 md:px-3 md:py-2 text-right">
-                              <p className="font-black text-xs text-white">₩{formatNumber(price, 0)}</p>
-                              <p className={`text-[9px] font-bold mt-0.5 ${coin.upbitChangeRate > 0 ? "text-rose-500" : "text-blue-500"}`}>
-                                {coin.upbitChangeRate > 0 ? "▲" : "▼"} {formatNumber(Math.abs(coin.upbitChangeRate * 100), 2)}%
-                              </p>
-                            </td>
-                            <td className="p-2 md:px-3 md:py-2 text-right">
-                              <p className="font-bold text-neutral-200 text-xs">${formatNumber(coin.usdtPrice, 2)}</p>
-                              <p className={`text-[9px] font-bold mt-0.5 ${coin.binanceChangeRate > 0 ? "text-emerald-500" : "text-rose-500"}`}>
-                                {coin.binanceChangeRate > 0 ? "▲" : "▼"} {formatNumber(Math.abs(coin.binanceChangeRate), 2)}%
-                              </p>
-                            </td>
-                            <td className="p-2 md:px-3 md:py-2 text-right">
-                              <span className={`inline-block px-2 py-1 rounded-md text-[11px] font-black shadow-sm ${getPremiumColor(premium)}`}>
-                                {premium > 0 ? "+" : ""}{formatNumber(premium, 2)}%
-                              </span>
-                            </td>
-                            <td className="p-2 md:px-3 md:py-2 text-right">
-                              <p className="font-black text-neutral-400 text-xs">{formatNumber(coin.upbitVolumeKrw / 1e8, 0)}<span className="text-[9px] ml-0.5 text-neutral-600 font-bold">억</span></p>
-                              <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">VOL ${formatNumber(coin.binanceVolumeUsdt / 1e6, 1)}M</p>
-                            </td>
-                          </tr>
-                          {expandedRow === coin.symbol && (
-                            <tr>
-                              <td colSpan={5} className="p-0 border-b border-neutral-800 bg-neutral-900/40 animate-in fade-in slide-in-from-top-2 duration-300">
+                               <p className="font-black text-neutral-300 text-xs">
+                                 ${coin.marketCap > 1e12 ? (coin.marketCap / 1e12).toFixed(1) + "T" : (coin.marketCap / 1e9).toFixed(1) + "B"}
+                               </p>
+                             </td>
+                             <td className="p-2 md:px-3 md:py-2 text-right">
+                               <p className="font-black text-xs text-white">₩{formatNumber(price, 0)}</p>
+                               <p className={`text-[9px] font-bold mt-0.5 ${coin.upbitChangeRate > 0 ? "text-rose-500" : "text-blue-500"}`}>
+                                 {coin.upbitChangeRate > 0 ? "▲" : "▼"} {formatNumber(Math.abs(coin.upbitChangeRate * 100), 2)}%
+                               </p>
+                             </td>
+                             <td className="p-2 md:px-3 md:py-2 text-right">
+                               <span className={`inline-block px-2 py-1 rounded-md text-[11px] font-black shadow-sm ${getPremiumColor(premium)}`}>
+                                 {premium > 0 ? "+" : ""}{formatNumber(premium, 2)}%
+                               </span>
+                               <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">${formatNumber(coin.usdtPrice, 2)}</p>
+                             </td>
+                             <td className="p-2 md:px-3 md:py-2 text-right">
+                               <p className="font-black text-neutral-400 text-xs">{formatNumber(coin.upbitVolumeKrw / 1e8, 0)}<span className="text-[9px] ml-0.5 text-neutral-600 font-bold">억</span></p>
+                               <p className="text-[8px] font-bold text-neutral-700 uppercase mt-0.5 tracking-tighter">BIN VOL ${formatNumber(coin.binanceVolumeUsdt / 1e6, 1)}M</p>
+                             </td>
+                           </tr>
+                           {expandedRow === coin.symbol && (
+                             <tr>
+                               <td colSpan={5} className="p-0 border-b border-neutral-800 bg-neutral-900/40 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div className="p-2 md:p-6">
                                   <Chart symbol={coin.symbol} upbitSymbol={coin.upbitSymbol} />
                                 </div>

@@ -266,10 +266,30 @@ async function updatePrices() {
       upbitVolumeKrw,
       binanceChangeRate: Number(binance.priceChangePercent),
       binanceVolumeUsdt: Number(binance.quoteVolume),
+      marketCap: 0, // Will be updated by CC fallback or default
       updatedAt: new Date().toISOString()
     };
   });
  
+  // Always fetch MarketCap/Global data from CC to keep it fresh
+  try {
+    const fsyms = COINS.map(c => c.symbol).join(",");
+    const ccUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
+    const ccData = await fetchJson(ccUrl, 5000);
+    if (ccData && ccData.RAW) {
+      COINS.forEach((coin) => {
+        const raw = ccData.RAW[coin.symbol];
+        if (raw && raw.USD && state.coins[coin.symbol]) {
+          state.coins[coin.symbol].marketCap = raw.USD.MKTCAP || 0;
+          // If we were in fallback mode, we'd also update prices here, 
+          // but we already have Binance/Upbit prices which are better.
+        }
+      });
+    }
+  } catch (err) {
+    console.error("[Backend] CC MarketCap fetch failed:", err.message);
+  }
+
   if (Object.keys(state.coins).length === 0) {
     console.warn("[Backend] Primary APIs blocked. Fallback to CryptoCompare...");
     try {
