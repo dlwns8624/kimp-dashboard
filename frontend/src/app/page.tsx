@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
+import TradingViewSingleQuote from "@/components/TradingViewSingleQuote";
 import { WS_BASE_URL } from "@/lib/constants";
 
 const Chart = dynamic(() => import("@/components/Chart"), { ssr: false });
@@ -262,31 +263,13 @@ export default function Home() {
             {/* Macro Indicators Row (TradingView Widgets) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
-                <iframe 
-                  scrolling="no" 
-                  allowTransparency={true} 
-                  frameBorder="0" 
-                  src="https://www.tradingview-widget.com/embed-widget-single-quote/?locale=ko#%7B%22symbol%22%3A%22FOREXCOM%3ANSXUSD%22%2C%22width%22%3A%22100%25%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%7D"
-                  className="w-full h-full"
-                ></iframe>
+                <TradingViewSingleQuote symbol="FOREXCOM:NSXUSD" />
               </div>
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
-                <iframe 
-                  scrolling="no" 
-                  allowTransparency={true} 
-                  frameBorder="0" 
-                  src="https://www.tradingview-widget.com/embed-widget-single-quote/?locale=ko#%7B%22symbol%22%3A%22TVC%3AGOLD%22%2C%22width%22%3A%22100%25%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%7D"
-                  className="w-full h-full"
-                ></iframe>
+                <TradingViewSingleQuote symbol="TVC:GOLD" />
               </div>
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-lg h-[126px] flex items-center justify-center">
-                <iframe 
-                  scrolling="no" 
-                  allowTransparency={true} 
-                  frameBorder="0" 
-                  src="https://www.tradingview-widget.com/embed-widget-single-quote/?locale=ko#%7B%22symbol%22%3A%22FX_IDC%3AUSDKRW%22%2C%22width%22%3A%22100%25%22%2C%22colorTheme%22%3A%22dark%22%2C%22isTransparent%22%3Atrue%7D"
-                  className="w-full h-full"
-                ></iframe>
+                <TradingViewSingleQuote symbol="FX_IDC:USDKRW" />
               </div>
             </div>
 
