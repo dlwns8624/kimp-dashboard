@@ -92,7 +92,25 @@ export default function Home() {
     }
   }, [notiEnabled, notiTargetKimp, exchange]);
 
+  const fetchInitialData = useCallback(async () => {
+    try {
+      const res = await fetch(`${WS_BASE_URL.replace("ws://", "http://").replace("wss://", "https://")}/api/state`);
+      if (res.ok) {
+        const fullState = await res.json();
+        if (fullState) {
+          setData(fullState);
+          if (fullState.coins) checkNotifications(fullState.coins);
+        }
+      }
+    } catch (e) {
+      console.error("Initial fetch error:", e);
+    }
+  }, [checkNotifications]);
+
   useEffect(() => {
+    fetchInitialData();
+    const interval = setInterval(fetchInitialData, 10000); // 10s polling fallback
+
     const connectWs = () => {
       const ws = new WebSocket(WS_BASE_URL);
       wsRef.current = ws;
@@ -106,9 +124,7 @@ export default function Home() {
             const newState = msg.state || msg.data;
             if (newState) {
               setData(newState);
-              if (newState.coins) {
-                checkNotifications(newState.coins);
-              }
+              if (newState.coins) checkNotifications(newState.coins);
             }
           } else if (type === "CHAT") {
             const chatMsg = msg.payload || msg.data;
@@ -131,8 +147,9 @@ export default function Home() {
     connectWs();
     return () => {
       if (wsRef.current) wsRef.current.close();
+      clearInterval(interval);
     };
-  }, [checkNotifications]);
+  }, [checkNotifications, fetchInitialData]);
 
   const setupNotifications = async () => {
     if (!("Notification" in window)) return;

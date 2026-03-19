@@ -1,33 +1,34 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export default function TradingViewSingleQuote({ symbol }: { symbol: string }) {
-  const [mounted, setMounted] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    if (!containerRef.current) return;
 
-  if (!mounted) return <div className="w-full h-[120px] bg-neutral-900 animate-pulse rounded-xl" />;
+    // Clear previous content
+    containerRef.current.innerHTML = '';
 
-  const options = {
-    symbol: symbol,
-    width: "100%",
-    colorTheme: "dark",
-    isTransparent: true,
-    locale: "ko"
-  };
+    const script = document.createElement("script");
+    script.src = "https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js";
+    script.type = "text/javascript";
+    script.async = true;
+    script.innerHTML = JSON.stringify({
+      "symbol": symbol,
+      "width": "100%",
+      "colorTheme": "dark",
+      "isTransparent": true,
+      "locale": "ko"
+    });
 
-  const iframeUrl = `https://www.tradingview-widget.com/embed-widget-single-quote/?locale=ko#${encodeURIComponent(JSON.stringify(options))}`;
+    containerRef.current.appendChild(script);
+  }, [symbol]);
 
   return (
-    <div className="w-full h-[126px] bg-neutral-900/50 rounded-xl overflow-hidden border border-neutral-800 shadow-lg">
-      <iframe
-        src={iframeUrl}
-        style={{ width: '100%', height: '100%', border: 'none' }}
-        title={`TradingView Quote - ${symbol}`}
-      ></iframe>
+    <div className="tradingview-widget-container" ref={containerRef}>
+      <div className="tradingview-widget-container__widget"></div>
     </div>
   );
 }
