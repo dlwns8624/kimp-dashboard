@@ -4,17 +4,13 @@ const nextConfig = {
   typescript: { ignoreBuildErrors: true },
   async redirects() {
     return [
-      {
-        source: '/indicators',
-        destination: '/market-data',
-        permanent: true,
-      },
+      // 레거시 URL만 새 지표 페이지로 통합
       {
         source: '/global-indicators',
-        destination: '/market-data',
+        destination: '/indicators',
         permanent: true,
       },
-    ]
+    ];
   },
   async rewrites() {
     return [

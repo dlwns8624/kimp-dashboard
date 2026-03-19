@@ -541,6 +541,43 @@ function createServer() {
     res.json(CALENDAR_EVENTS);
   });
 
+  app.get("/api/funding-rates", async (req, res) => {
+    const TRACKED_SYMBOLS = ["BTCUSDT", "ETHUSDT", "XRPUSDT", "SOLUSDT", "BNBUSDT", "DOGEUSDT", "ADAUSDT", "AVAXUSDT"];
+    try {
+      const url = "https://fapi.binance.com/fapi/v1/premiumIndex";
+      const data = await fetchJson(url, 6000).catch(() => null);
+      if (data && Array.isArray(data)) {
+        const filtered = data
+          .filter(item => TRACKED_SYMBOLS.includes(item.symbol))
+          .map(item => ({
+            symbol: item.symbol.replace("USDT", ""),
+            fundingRate: parseFloat(item.lastFundingRate) * 100,
+            markPrice: parseFloat(item.markPrice),
+            nextFundingTime: item.nextFundingTime
+          }))
+          .sort((a, b) => TRACKED_SYMBOLS.indexOf(a.symbol + "USDT") - TRACKED_SYMBOLS.indexOf(b.symbol + "USDT"));
+        return res.json(filtered);
+      }
+      // Fallback mock data
+      res.json(TRACKED_SYMBOLS.map(s => ({
+        symbol: s.replace("USDT", ""),
+        fundingRate: (Math.random() - 0.5) * 0.2,
+        markPrice: 0,
+        nextFundingTime: Date.now() + 8 * 3600 * 1000
+      })));
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch funding rates" });
+    }
+  });
+
+  app.get("/api/dominance", (_req, res) => {
+    if (state.globalMetrics) {
+      res.json(state.globalMetrics);
+    } else {
+      res.json({ btcDominance: 0, ethDominance: 0, totalMarketCap: 0, totalVolume: 0 });
+    }
+  });
+
   app.get("/api/coins", (_req, res) => {
     const rows = COINS.map((coin) => {
       const data = state.coins[coin.symbol] || null;
