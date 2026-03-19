@@ -291,20 +291,22 @@ async function updatePrices() {
     };
   });
  
-  // Always fetch MarketCap/Global data from CC to keep it fresh
+  // Fetch MarketCap/Global data from CC in chunks to avoid URL limits (60+ coins)
   try {
-    const fsyms = COINS.map(c => c.symbol).join(",");
-    const ccUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
-    const ccData = await fetchJson(ccUrl, 5000);
-    if (ccData && ccData.RAW) {
-      COINS.forEach((coin) => {
-        const raw = ccData.RAW[coin.symbol];
-        if (raw && raw.USD && state.coins[coin.symbol]) {
-          state.coins[coin.symbol].marketCap = raw.USD.MKTCAP || 0;
-          // If we were in fallback mode, we'd also update prices here, 
-          // but we already have Binance/Upbit prices which are better.
-        }
-      });
+    const CHUNK_SIZE = 15;
+    for (let i = 0; i < COINS.length; i += CHUNK_SIZE) {
+      const chunk = COINS.slice(i, i + CHUNK_SIZE);
+      const fsyms = chunk.map(c => c.symbol).join(",");
+      const ccUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
+      const ccData = await fetchJson(ccUrl, 5000);
+      if (ccData && ccData.RAW) {
+        chunk.forEach((coin) => {
+          const raw = ccData.RAW[coin.symbol];
+          if (raw && raw.USD && state.coins[coin.symbol]) {
+            state.coins[coin.symbol].marketCap = raw.USD.MKTCAP || 0;
+          }
+        });
+      }
     }
   } catch (err) {
     console.error("[Backend] CC MarketCap fetch failed:", err.message);
@@ -313,36 +315,40 @@ async function updatePrices() {
   if (Object.keys(state.coins).length === 0) {
     console.warn("[Backend] Primary APIs blocked. Fallback to CryptoCompare...");
     try {
-      const fsyms = COINS.map(c => c.symbol).join(",");
-      const fallbackUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
-      const fallbackData = await fetchJson(fallbackUrl, 5000);
-      
-      if (fallbackData && fallbackData.RAW) {
-        COINS.forEach((coin) => {
-          const raw = fallbackData.RAW[coin.symbol];
-          if (raw && raw.USD && raw.KRW) {
-            const krwPrice = raw.KRW.PRICE;
-            const usdtPrice = raw.USD.PRICE;
-            const premium = computePremium(krwPrice, usdtPrice, state.fxRate);
-            
-            state.coins[coin.symbol] = {
-              symbol: coin.symbol,
-              upbitSymbol: coin.upbit,
-              binanceSymbol: coin.binance,
-              krwPrice,
-              usdtPrice,
-              premium,
-              bithumbPrice: krwPrice,
-              bithumbPremium: premium,
-              upbitChangeRate: raw.KRW.CHANGEPCT24HOUR / 100,
-              upbitVolumeKrw: raw.KRW.VOLUME24HOURTO,
-              binanceChangeRate: raw.USD.CHANGEPCT24HOUR,
-              binanceVolumeUsdt: raw.USD.VOLUME24HOURTO,
-              marketCap: raw.USD.MKTCAP || 0,
-              updatedAt: new Date().toISOString()
-            };
-          }
-        });
+      const CHUNK_SIZE = 15;
+      for (let i = 0; i < COINS.length; i += CHUNK_SIZE) {
+        const chunk = COINS.slice(i, i + CHUNK_SIZE);
+        const fsyms = chunk.map(c => c.symbol).join(",");
+        const fallbackUrl = `https://min-api.cryptocompare.com/data/pricemultifull?fsyms=${fsyms}&tsyms=USD,KRW`;
+        const fallbackData = await fetchJson(fallbackUrl, 5000);
+        
+        if (fallbackData && fallbackData.RAW) {
+          chunk.forEach((coin) => {
+            const raw = fallbackData.RAW[coin.symbol];
+            if (raw && raw.USD && raw.KRW) {
+              const krwPrice = raw.KRW.PRICE;
+              const usdtPrice = raw.USD.PRICE;
+              const premium = computePremium(krwPrice, usdtPrice, state.fxRate);
+              
+              state.coins[coin.symbol] = {
+                symbol: coin.symbol,
+                upbitSymbol: coin.upbit,
+                binanceSymbol: coin.binance,
+                krwPrice,
+                usdtPrice,
+                premium,
+                bithumbPrice: krwPrice,
+                bithumbPremium: premium,
+                upbitChangeRate: raw.KRW.CHANGEPCT24HOUR / 100,
+                upbitVolumeKrw: raw.KRW.VOLUME24HOURTO,
+                binanceChangeRate: raw.USD.CHANGEPCT24HOUR,
+                binanceVolumeUsdt: raw.USD.VOLUME24HOURTO,
+                marketCap: raw.USD.MKTCAP || 0,
+                updatedAt: new Date().toISOString()
+              };
+            }
+          });
+        }
       }
     } catch (err) {
       console.error("[Backend] CryptoCompare fallback failed:", err.message);

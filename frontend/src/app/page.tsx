@@ -444,7 +444,7 @@ export default function Home() {
                   <div>
                     <div className="flex items-baseline gap-2 mb-0.5">
                       <span className="font-bold text-xs text-neutral-100">{msg.sender}</span>
-                      <span className="text-[9px] text-neutral-600 font-mono italic">{new Date(msg.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                      <span className="text-[9px] text-neutral-600 font-mono italic" suppressHydrationWarning>{new Date(msg.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                     </div>
                     <p className="text-sm text-neutral-400 leading-relaxed break-all selection:bg-indigo-500 selection:text-white">{msg.text}</p>
                   </div>
