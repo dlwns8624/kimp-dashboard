@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/indicators',
-        destination: '/global-indicators',
+        destination: '/market-data',
+        permanent: true,
+      },
+      {
+        source: '/global-indicators',
+        destination: '/market-data',
         permanent: true,
       },
     ]
