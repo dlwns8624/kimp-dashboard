@@ -3,14 +3,13 @@
 import React, { useEffect, useRef, useState, memo } from 'react';
 
 interface ChartProps {
-  symbol: string;          // 표시용 심볼 (e.g. "BTC", "NASDAQ 100", "Gold")
+  symbol: string;
   upbitSymbol?: string;
-  tvSymbol?: string;       // 직접 TradingView 심볼 지정 (e.g. "NASDAQ:NDX")
-  displayName?: string;    // 헤더 표시 이름 (지정 안 하면 symbol 사용)
-  subName?: string;        // 헤더 서브 이름 (기본: "TradingView · Binance")
+  tvSymbol?: string;       // 직접 TradingView 심볼 지정
+  displayName?: string;    // 헤더 표시 이름
+  subName?: string;        // 헤더 서브 이름
 }
 
-// 코인 심볼 → TradingView Binance 심볼 매핑
 const COIN_MAP: Record<string, string> = {
   BTC: "BINANCE:BTCUSDT", ETH: "BINANCE:ETHUSDT", XRP: "BINANCE:XRPUSDT",
   SOL: "BINANCE:SOLUSDT", DOGE: "BINANCE:DOGEUSDT", ADA: "BINANCE:ADAUSDT",
@@ -29,42 +28,40 @@ const COIN_MAP: Record<string, string> = {
   MKR: "BINANCE:MKRUSDT", SNX: "BINANCE:SNXUSDT", ANKR: "BINANCE:ANKRUSDT",
   BLUR: "BINANCE:BLURUSDT", PEPE: "BINANCE:PEPEUSDT", WLD: "BINANCE:WLDUSDT",
   TIA: "BINANCE:TIAUSDT", JUP: "BINANCE:JUPUSDT", BONK: "BINANCE:BONKUSDT",
-  ORDI: "BINANCE:ORDIUSDT", MINA: "BINANCE:MINAUSDT", ASTR: "BINANCE:ASTRUSDT",
-  GLM: "BINANCE:GLMUSDT", MASK: "BINANCE:MASKUSDT",
-  // 매크로 지수 / FX
-  NDX:    "NASDAQ:NDX",
+  ORDI: "BINANCE:ORDIUSDT",
+  // 매크로
+  NDX:    "CME_MINI:NQ1!",   // 나스닥 100 선물
   NQ:     "CME_MINI:NQ1!",
   GOLD:   "TVC:GOLD",
   USDKRW: "FX:USDKRW",
 };
 
-function getTvSymbol(symbol: string, tvSymbolOverride?: string): string {
-  if (tvSymbolOverride) return tvSymbolOverride;
+function getTvSymbol(symbol: string, override?: string): string {
+  if (override) return override;
   return COIN_MAP[symbol.toUpperCase()] ?? `BINANCE:${symbol.toUpperCase()}USDT`;
 }
 
 function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const widgetRef    = useRef<unknown>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const widgetRef    = useRef<any>(null);
+  const [chartHeight, setChartHeight] = useState(450);
 
-  // 반응형 크기 감지
+  // 높이만 반응형 (PC와 동일한 기능 유지)
   useEffect(() => {
-    const update = () => setIsMobile(window.innerWidth < 768);
+    const update = () => setChartHeight(window.innerWidth < 768 ? 320 : 450);
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // TradingView 위젯 생성
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     if (widgetRef.current) { el.innerHTML = ""; widgetRef.current = null; }
 
-    const tvSym   = getTvSymbol(symbol, tvSymbolProp);
-    const mobile  = window.innerWidth < 768;
+    const tvSym = getTvSymbol(symbol, tvSymbolProp);
 
     const script  = document.createElement("script");
     script.src    = "https://s3.tradingview.com/tv.js";
@@ -74,37 +71,33 @@ function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartPr
       if (!el || !(window as any).TradingView) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const TV = (window as any).TradingView;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       widgetRef.current = new TV.widget({
-        symbol:           tvSym,
-        interval:         mobile ? "60" : "15",
-        timezone:         "Asia/Seoul",
-        theme:            "dark",
-        style:            "1",
-        locale:           "kr",
-        container_id:     el.id,
-        autosize:         true,
-        toolbar_bg:       "#0a0a0a",
+        symbol:            tvSym,
+        interval:          "15",
+        timezone:          "Asia/Seoul",
+        theme:             "dark",
+        style:             "1",
+        locale:            "kr",
+        container_id:      el.id,
+        autosize:          true,
+        toolbar_bg:        "#0a0a0a",
         enable_publishing: false,
-
-        // 모바일: 최대한 심플하게
-        hide_top_toolbar:  mobile,
-        hide_legend:       mobile,
-        hide_side_toolbar: mobile,
-        withdateranges:    !mobile,
+        hide_top_toolbar:  false,
+        hide_legend:       false,
+        hide_side_toolbar: false,
+        withdateranges:    true,
         save_image:        false,
-        hide_volume:       mobile,
-
-        // 모바일에선 인디케이터 없이 (차트 영역 최대화)
-        studies: mobile ? [] : ["STD;Bollinger_Bands", "STD;MACD"],
-
+        hide_volume:       false,
+        allow_symbol_change: true,
+        // PC와 동일 — 모바일도 동일하게 표시
+        studies: ["STD;Bollinger_Bands", "STD;MACD"],
         overrides: {
-          "mainSeriesProperties.candleStyle.upColor":        "#ef4444",
-          "mainSeriesProperties.candleStyle.downColor":      "#3b82f6",
-          "mainSeriesProperties.candleStyle.borderUpColor":  "#ef4444",
-          "mainSeriesProperties.candleStyle.borderDownColor":"#3b82f6",
-          "mainSeriesProperties.candleStyle.wickUpColor":    "#ef4444",
-          "mainSeriesProperties.candleStyle.wickDownColor":  "#3b82f6",
+          "mainSeriesProperties.candleStyle.upColor":         "#ef4444",
+          "mainSeriesProperties.candleStyle.downColor":       "#3b82f6",
+          "mainSeriesProperties.candleStyle.borderUpColor":   "#ef4444",
+          "mainSeriesProperties.candleStyle.borderDownColor": "#3b82f6",
+          "mainSeriesProperties.candleStyle.wickUpColor":     "#ef4444",
+          "mainSeriesProperties.candleStyle.wickDownColor":   "#3b82f6",
           "paneProperties.background":     "#0a0a0a",
           "paneProperties.backgroundType": "solid",
         },
@@ -113,19 +106,16 @@ function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartPr
     };
 
     document.head.appendChild(script);
-    return () => { if (el) { el.innerHTML = ""; } widgetRef.current = null; };
-  // isMobile 바뀔 때도 위젯 재생성
+    return () => { if (el) el.innerHTML = ""; widgetRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbol, tvSymbolProp, isMobile]);
+  }, [symbol, tvSymbolProp, chartHeight]);
 
-  const containerId   = `tv-chart-${symbol}-${Date.now() % 10000}`;
-  const chartHeight   = isMobile ? 260 : 450;
+  const containerId   = `tv-chart-${symbol}-${Math.random().toString(36).slice(2, 7)}`;
   const headerDisplay = displayName ?? symbol;
   const headerSub     = subName ?? "TradingView · Binance";
 
   return (
     <div className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl relative">
-      {/* 헤더 */}
       <div className="px-3 py-2 md:p-3 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/20">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 md:w-7 md:h-7 rounded-md md:rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-[9px] md:text-xs ring-1 ring-indigo-500/20">
@@ -141,7 +131,6 @@ function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartPr
           <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse" />
         </div>
       </div>
-
       <div id={containerId} ref={containerRef} className="w-full" style={{ height: chartHeight }} />
     </div>
   );
