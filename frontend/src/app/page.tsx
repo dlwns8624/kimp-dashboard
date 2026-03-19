@@ -373,7 +373,7 @@ export default function Home() {
                             <tr>
                               <td colSpan={5} className="p-0 border-b border-neutral-800 bg-neutral-900/40 animate-in fade-in slide-in-from-top-2 duration-300">
                                 <div className="p-2 md:p-6">
-                                  <Chart symbol={coin.symbol} binanceSymbol={coin.binanceSymbol} />
+                                  <Chart symbol={coin.symbol} upbitSymbol={coin.upbitSymbol} />
                                 </div>
                               </td>
                             </tr>
