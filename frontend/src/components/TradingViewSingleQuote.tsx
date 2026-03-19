@@ -1,33 +1,45 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, memo } from "react";
 
-export default function TradingViewSingleQuote({ symbol }: { symbol: string }) {
-  const [mounted, setMounted] = useState(false);
+function TradingViewSingleQuote({ symbol }: { symbol: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
+    const el = containerRef.current;
+    if (!el) return;
 
-  if (!mounted) return <div className="w-full h-[120px] bg-neutral-900 animate-pulse rounded-xl" />;
+    el.innerHTML = "";
 
-  const options = {
-    symbol: symbol,
-    width: "100%",
-    colorTheme: "dark",
-    isTransparent: true,
-    locale: "ko"
-  };
+    const script = document.createElement("script");
+    script.type = "text/javascript";
+    script.async = true;
+    script.src =
+      "https://s3.tradingview.com/external-embedding/embed-widget-single-quote.js";
+    script.textContent = JSON.stringify({
+      symbol,
+      width: "100%",
+      isTransparent: true,
+      colorTheme: "dark",
+      locale: "ko",
+    });
 
-  const iframeUrl = `https://www.tradingview-widget.com/embed-widget-single-quote/?locale=ko#${encodeURIComponent(JSON.stringify(options))}`;
+    el.appendChild(script);
+
+    return () => {
+      if (el) el.innerHTML = "";
+    };
+  }, [symbol]);
 
   return (
-    <div className="w-full h-[126px] bg-neutral-900/50 rounded-xl overflow-hidden border border-neutral-800 shadow-lg">
-      <iframe
-        src={iframeUrl}
-        style={{ width: '100%', height: '100%', border: 'none' }}
-        title={`TradingView Quote - ${symbol}`}
-      ></iframe>
+    <div className="w-full bg-neutral-900/50 rounded-xl overflow-hidden border border-neutral-800 shadow-lg">
+      <div
+        ref={containerRef}
+        className="tradingview-widget-container"
+        style={{ width: "100%", height: 126 }}
+      />
     </div>
   );
 }
+
+export default memo(TradingViewSingleQuote);

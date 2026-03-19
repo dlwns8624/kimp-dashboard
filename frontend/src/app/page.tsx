@@ -305,7 +305,7 @@ export default function Home() {
                   value: fmtNum(market.nasdaq, 1),
                   sub: "선물", tagColor: "text-indigo-400",
                   accent: "hover:border-indigo-500/30", grad: "from-indigo-500/10",
-                  tvSymbol: "NASDAQ:NDX",
+                  tvSymbol: "CME_MINI:NQ1!",
                 },
                 {
                   key: "gold" as const,
@@ -662,7 +662,7 @@ export default function Home() {
       {/* ── FLOATING CHAT WIDGET ─────────────────────────────────── */}
       {/* Chat Popup */}
       {chatOpen && (
-        <div className="fixed bottom-20 right-4 z-50 w-[340px] sm:w-[380px] h-[480px] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden">
+        <div className="fixed bottom-[136px] md:bottom-20 right-2 md:right-4 z-50 w-[calc(100vw-16px)] sm:w-[380px] h-[420px] md:h-[480px] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden">
           {/* Header */}
           <div className="p-3.5 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/80 backdrop-blur-sm shrink-0">
             <div className="flex items-center gap-2">
@@ -722,7 +722,7 @@ export default function Home() {
       {/* Chat Toggle Button */}
       <button
         onClick={toggleChat}
-        className={`fixed bottom-4 right-4 z-50 w-14 h-14 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
+        className={`fixed bottom-[68px] md:bottom-4 right-3 md:right-4 z-50 w-12 h-12 md:w-14 md:h-14 rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
           chatOpen
             ? "bg-neutral-700 hover:bg-neutral-600"
             : "bg-indigo-600 hover:bg-indigo-500 shadow-indigo-500/30"
