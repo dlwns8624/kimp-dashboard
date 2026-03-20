@@ -624,15 +624,15 @@ export default function Home() {
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl flex flex-col h-[520px] overflow-hidden">
             <div className="flex border-b border-neutral-800 bg-neutral-900/60 shrink-0">
               <button onClick={() => setRightTab("whale")}
-                className={`flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${rightTab === "whale" ? "text-indigo-400 border-indigo-500 bg-indigo-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
+                className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-black uppercase tracking-widest transition-all border-b-2 ${rightTab === "whale" ? "text-indigo-400 border-indigo-500 bg-indigo-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
                 🐋 고래 거래
               </button>
               <button onClick={() => setRightTab("liquidation")}
-                className={`flex items-center gap-2 px-4 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2 ${rightTab === "liquidation" ? "text-rose-400 border-rose-500 bg-rose-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
+                className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-black uppercase tracking-widest transition-all border-b-2 ${rightTab === "liquidation" ? "text-rose-400 border-rose-500 bg-rose-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
                 🔥 청산 감지
               </button>
               <div className="ml-auto flex items-center px-4">
-                <span className="text-[9px] font-bold text-neutral-600 font-mono">Real-time · Binance</span>
+                <span className="text-[9px] md:text-[10px] font-bold text-neutral-600 font-mono">Real-time · Binance</span>
               </div>
             </div>
 
@@ -644,7 +644,7 @@ export default function Home() {
                   {liquidations.length === 0 ? (
                     <div className="text-center py-20 flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-2 border-neutral-800 border-t-rose-500/50 rounded-full animate-spin" />
-                      <p className="text-sm font-black text-neutral-600 uppercase tracking-widest">
+                      <p className="text-sm md:text-base font-black text-neutral-600 uppercase tracking-widest">
                         BTC · ETH · SOL · XRP · BNB 청산 대기 중...
                       </p>
                     </div>
@@ -652,11 +652,11 @@ export default function Home() {
                     <table className="w-full border-collapse">
                       <thead className="sticky top-0 z-10 bg-neutral-900/95 backdrop-blur-sm">
                         <tr className="border-b border-neutral-800">
-                          <th className="px-2 md:px-4 py-2 text-left text-[9px] md:text-[10px] font-black text-neutral-500 uppercase tracking-wider">코인</th>
-                          <th className="px-2 md:px-4 py-2 text-left text-[9px] md:text-[10px] font-black text-neutral-500 uppercase tracking-wider">유형</th>
-                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-[10px] font-black text-neutral-500 uppercase tracking-wider">청산금액</th>
-                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-[10px] font-black text-neutral-500 uppercase tracking-wider hidden md:table-cell">가격</th>
-                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-[10px] font-black text-neutral-500 uppercase tracking-wider">시간</th>
+                          <th className="px-2 md:px-4 py-2 text-left text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider">코인</th>
+                          <th className="px-2 md:px-4 py-2 text-left text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider">유형</th>
+                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider">청산금액</th>
+                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider hidden md:table-cell">가격</th>
+                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider">시간</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -680,20 +680,20 @@ export default function Home() {
                               <td className="px-2 md:px-4 py-2 md:py-2.5">
                                 <div className="flex items-center gap-1.5 md:gap-2.5">
                                   <div
-                                    className="w-7 h-7 md:w-8 md:h-8 rounded-lg flex items-center justify-center font-black text-[11px] md:text-xs shrink-0"
+                                    className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center font-black text-[11px] md:text-sm shrink-0"
                                     style={{ background: coinColor.bg, color: coinColor.text, border: `1px solid ${coinColor.text}30` }}
                                   >
                                     {sym.charAt(0)}
                                   </div>
                                   <div>
-                                    <p className="text-[11px] md:text-xs font-black text-white leading-none">{sym}</p>
-                                    <p className="text-[8px] md:text-[9px] text-neutral-600 font-mono mt-0.5 hidden sm:block">PERP</p>
+                                    <p className="text-[11px] md:text-sm font-black text-white leading-none">{sym}</p>
+                                    <p className="text-[8px] md:text-[10px] text-neutral-600 font-mono mt-0.5 hidden sm:block">PERP</p>
                                   </div>
                                 </div>
                               </td>
                               {/* 유형 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5">
-                                <span className={`inline-flex items-center gap-1 px-1.5 md:px-2.5 py-1 rounded-md md:rounded-lg text-[9px] md:text-[10px] font-black whitespace-nowrap ${
+                                <span className={`inline-flex items-center gap-1 px-1.5 md:px-2.5 py-1 rounded-md md:rounded-lg text-[9px] md:text-xs font-black whitespace-nowrap ${
                                   isLong ? "bg-rose-500/15 text-rose-400 border border-rose-500/20" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
                                 }`}>
                                   {isLong ? "🔻롱청산" : "🔺숏청산"}
@@ -701,19 +701,19 @@ export default function Home() {
                               </td>
                               {/* 청산금액 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5 text-right">
-                                <p className={`text-[11px] md:text-xs font-black whitespace-nowrap ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
+                                <p className={`text-[11px] md:text-sm font-black whitespace-nowrap ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
                                   ${fmtNum(liq.price * liq.qty, 0)}
                                 </p>
                               </td>
                               {/* 가격 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5 text-right hidden md:table-cell">
-                                <p className="text-[10px] text-neutral-400 font-mono font-bold">
+                                <p className="text-[10px] md:text-xs text-neutral-400 font-mono font-bold">
                                   ${fmtNum(liq.price, liq.price >= 100 ? 2 : liq.price >= 1 ? 4 : 6)}
                                 </p>
                               </td>
                               {/* 시간 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5 text-right">
-                                <p className="text-[9px] md:text-[10px] text-neutral-500 font-mono whitespace-nowrap">
+                                <p className="text-[9px] md:text-xs text-neutral-500 font-mono whitespace-nowrap">
                                   {new Date(liq.time).toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                                 </p>
                               </td>

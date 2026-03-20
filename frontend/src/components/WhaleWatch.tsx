@@ -168,13 +168,13 @@ export default function WhaleWatch() {
     <div className="flex flex-col h-full min-h-0 overflow-hidden">
 
       {/* ── Filters ── */}
-      <div className="flex flex-wrap gap-1.5 p-2 border-b border-neutral-800 shrink-0">
+      <div className="flex flex-wrap gap-1.5 md:gap-2 p-2 md:p-2.5 border-b border-neutral-800 shrink-0">
         <div className="flex bg-neutral-950 rounded-lg border border-neutral-800 overflow-hidden">
           {SYMBOLS.map(s => (
             <button
               key={s}
               onClick={() => setSymbol(s)}
-              className={`px-2 py-1 text-[10px] font-black transition-colors ${
+              className={`px-2 py-1 text-[10px] md:px-2.5 md:py-1.5 md:text-xs font-black transition-colors ${
                 symbol === s ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-neutral-300"
               }`}
             >
@@ -188,7 +188,7 @@ export default function WhaleWatch() {
             <button
               key={m.value}
               onClick={() => setMinAmount(m.value)}
-              className={`px-2 py-1 text-[10px] font-black transition-colors ${
+              className={`px-2 py-1 text-[10px] md:px-2.5 md:py-1.5 md:text-xs font-black transition-colors ${
                 minAmount === m.value ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-neutral-300"
               }`}
             >
@@ -199,7 +199,7 @@ export default function WhaleWatch() {
 
         <div className="ml-auto flex items-center gap-1">
           <div className={`w-2 h-2 rounded-full ${connected ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
-          <span className="text-[10px] font-bold text-neutral-500">
+          <span className="text-[10px] md:text-[11px] font-bold text-neutral-500">
             {connected ? "LIVE" : "끊김"}
           </span>
         </div>
@@ -212,12 +212,12 @@ export default function WhaleWatch() {
           const tot = s.buy + s.sell;
           const pct = tot > 0 ? (s.buy / tot) * 100 : 50;
           return (
-            <div key={k} className={`p-2 ${i < 3 ? "border-r border-neutral-800" : ""}`}>
-              <p className="text-[9px] font-black text-neutral-500 mb-1">
+            <div key={k} className={`p-2 md:p-2.5 ${i < 3 ? "border-r border-neutral-800" : ""}`}>
+              <p className="text-[9px] md:text-[10px] font-black text-neutral-500 mb-1">
                 {k === "h1" ? "1H" : k === "h4" ? "4H" : k === "h12" ? "12H" : "24H"}
               </p>
-              <p className="text-[10px] font-black text-emerald-400 leading-none">{fmt$(s.buy)}</p>
-              <p className="text-[10px] font-black text-rose-400 leading-none mt-0.5">{fmt$(s.sell)}</p>
+              <p className="text-[10px] md:text-xs font-black text-emerald-400 leading-none">{fmt$(s.buy)}</p>
+              <p className="text-[10px] md:text-xs font-black text-rose-400 leading-none mt-0.5">{fmt$(s.sell)}</p>
               <div className="mt-1 h-1 rounded-full overflow-hidden bg-neutral-800 flex">
                 <div className="bg-emerald-500 h-full" style={{ width: `${pct}%` }} />
                 <div className="bg-rose-500 h-full flex-1" />
@@ -228,8 +228,8 @@ export default function WhaleWatch() {
       </div>
 
       {/* ── Chart ── */}
-      <div className="px-2 pt-2 pb-1 border-b border-neutral-800 shrink-0">
-        <p className="text-[9px] font-bold text-neutral-500 mb-1">
+      <div className="px-2 md:px-3 pt-2 pb-1 border-b border-neutral-800 shrink-0">
+        <p className="text-[9px] md:text-[10px] font-bold text-neutral-500 mb-1">
           1시간 고래 거래 <span className="text-neutral-600">($K · 5분 단위)</span>
         </p>
         <ResponsiveContainer width="100%" height={72}>
@@ -269,7 +269,7 @@ export default function WhaleWatch() {
         {visible.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-2 py-12">
             <div className="w-7 h-7 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
-            <p className="text-[11px] text-neutral-600 font-bold">
+            <p className="text-[11px] md:text-xs text-neutral-600 font-bold">
               {connected ? "고래 거래 대기 중..." : "바이낸스 연결 중..."}
             </p>
           </div>
@@ -280,7 +280,7 @@ export default function WhaleWatch() {
                 {["시간", "가격", "수량", "거래액", "유형"].map((h, i) => (
                   <th
                     key={h}
-                    className={`px-2 py-1.5 text-[9px] font-black uppercase text-neutral-500 border-b border-neutral-800 ${
+                    className={`px-2 md:px-3 py-1.5 text-[9px] md:text-[10px] font-black uppercase text-neutral-500 border-b border-neutral-800 ${
                       i === 0 ? "" : "text-right"
                     } ${i === 4 ? "text-center" : ""} ${i === 2 ? "hidden sm:table-cell" : ""}`}
                   >
@@ -297,24 +297,24 @@ export default function WhaleWatch() {
                     i === 0 ? "bg-indigo-500/5 animate-pulse" : "hover:bg-neutral-800/10"
                   } ${t.isBuy ? "border-l-2 border-l-emerald-500/40" : "border-l-2 border-l-rose-500/40"}`}
                 >
-                  <td className="px-2 py-1.5 text-[10px] font-mono text-neutral-500 whitespace-nowrap">
+                  <td className="px-2 md:px-3 py-1.5 text-[10px] md:text-[11px] font-mono text-neutral-500 whitespace-nowrap">
                     {new Date(t.time).toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                   </td>
-                  <td className="px-2 py-1.5 text-[11px] font-black text-white text-right whitespace-nowrap">
+                  <td className="px-2 md:px-3 py-1.5 text-[11px] md:text-xs font-black text-white text-right whitespace-nowrap">
                     ${t.price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="px-2 py-1.5 text-[10px] text-neutral-400 text-right whitespace-nowrap hidden sm:table-cell">
+                  <td className="px-2 md:px-3 py-1.5 text-[10px] md:text-[11px] text-neutral-400 text-right whitespace-nowrap hidden sm:table-cell">
                     {t.qty >= 1 ? t.qty.toFixed(3) : t.qty.toFixed(4)}{" "}
                     <span className="text-neutral-600">{ticker}</span>
                   </td>
-                  <td className="px-2 py-1.5 text-[11px] font-black text-right whitespace-nowrap">
+                  <td className="px-2 md:px-3 py-1.5 text-[11px] md:text-xs font-black text-right whitespace-nowrap">
                     <span className={t.isBuy ? "text-emerald-400" : "text-rose-400"}>
                       {fmt$(t.value)}
                     </span>
                   </td>
-                  <td className="px-2 py-1.5 text-center">
+                  <td className="px-2 md:px-3 py-1.5 text-center">
                     <span
-                      className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-black whitespace-nowrap ${
+                      className={`inline-block px-1.5 py-0.5 rounded text-[9px] md:text-[10px] font-black whitespace-nowrap ${
                         t.isBuy
                           ? "bg-emerald-500/15 text-emerald-400"
                           : "bg-rose-500/15 text-rose-400"
