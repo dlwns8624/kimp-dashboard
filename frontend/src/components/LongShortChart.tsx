@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import * as LightweightCharts from "lightweight-charts";
+import {
+  createChart,
+  ColorType,
+  CrosshairMode,
+  AreaSeries,
+  LineSeries,
+  type IChartApi,
+  type Time,
+} from "lightweight-charts";
 import { API_BASE_URL } from "@/lib/constants";
 
 interface ChartProps {
@@ -18,15 +26,15 @@ export default function LongShortChart({
   chartType = "area",
 }: ChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<LightweightCharts.IChartApi | null>(null);
+  const chartRef = useRef<IChartApi | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!chartContainerRef.current) return;
 
-    const chart = LightweightCharts.createChart(chartContainerRef.current, {
+    const chart = createChart(chartContainerRef.current, {
       layout: {
-        background: { type: LightweightCharts.ColorType.Solid, color: "#171717" },
+        background: { type: ColorType.Solid, color: "#171717" },
         textColor: "#a3a3a3",
       },
       grid: {
@@ -39,41 +47,45 @@ export default function LongShortChart({
         scaleMargins: { top: 0.1, bottom: 0.1 },
       },
       crosshair: {
-        mode: LightweightCharts.CrosshairMode.Normal,
+        mode: CrosshairMode.Normal,
       },
     });
     chartRef.current = chart;
 
-    let longSeries: any;
-    let shortSeries: any;
+    const SeriesType = chartType === "area" ? AreaSeries : LineSeries;
 
-    if (chartType === "area") {
-      longSeries = (chart as any).addAreaSeries({
-        topColor: "rgba(16, 185, 129, 0.3)",
-        bottomColor: "rgba(16, 185, 129, 0)",
-        lineColor: "#10b981",
-        lineWidth: 2,
-        priceLineVisible: false,
-      });
-      shortSeries = (chart as any).addAreaSeries({
-        topColor: "rgba(244, 63, 94, 0.3)",
-        bottomColor: "rgba(244, 63, 94, 0)",
-        lineColor: "#f43f5e",
-        lineWidth: 2,
-        priceLineVisible: false,
-      });
-    } else {
-      longSeries = (chart as any).addLineSeries({
-        color: "#10b981",
-        lineWidth: 2,
-        priceLineVisible: false,
-      });
-      shortSeries = (chart as any).addLineSeries({
-        color: "#f43f5e",
-        lineWidth: 2,
-        priceLineVisible: false,
-      });
-    }
+    const longSeriesOptions =
+      chartType === "area"
+        ? {
+            topColor: "rgba(16, 185, 129, 0.3)",
+            bottomColor: "rgba(16, 185, 129, 0)",
+            lineColor: "#10b981",
+            lineWidth: 2 as const,
+            priceLineVisible: false,
+          }
+        : {
+            color: "#10b981",
+            lineWidth: 2 as const,
+            priceLineVisible: false,
+          };
+
+    const shortSeriesOptions =
+      chartType === "area"
+        ? {
+            topColor: "rgba(244, 63, 94, 0.3)",
+            bottomColor: "rgba(244, 63, 94, 0)",
+            lineColor: "#f43f5e",
+            lineWidth: 2 as const,
+            priceLineVisible: false,
+          }
+        : {
+            color: "#f43f5e",
+            lineWidth: 2 as const,
+            priceLineVisible: false,
+          };
+
+    const longSeries = chart.addSeries(SeriesType, longSeriesOptions);
+    const shortSeries = chart.addSeries(SeriesType, shortSeriesOptions);
 
     const handleResize = () => {
       if (chart && chartContainerRef.current) {
@@ -94,8 +106,8 @@ export default function LongShortChart({
         }
 
         const seen = new Set<number>();
-        const longData: any[] = [];
-        const shortData: any[] = [];
+        const longData: { time: Time; value: number }[] = [];
+        const shortData: { time: Time; value: number }[] = [];
 
         data
           .map((d: any) => ({
@@ -103,13 +115,16 @@ export default function LongShortChart({
             longVal: parseFloat(d.longAccount) * 100,
             shortVal: parseFloat(d.shortAccount) * 100,
           }))
-          .filter((d) => !isNaN(d.time) && !isNaN(d.longVal) && !isNaN(d.shortVal))
-          .sort((a, b) => a.time - b.time)
-          .forEach((d) => {
+          .filter(
+            (d: { time: number; longVal: number; shortVal: number }) =>
+              !isNaN(d.time) && !isNaN(d.longVal) && !isNaN(d.shortVal)
+          )
+          .sort((a: { time: number }, b: { time: number }) => a.time - b.time)
+          .forEach((d: { time: number; longVal: number; shortVal: number }) => {
             if (!seen.has(d.time)) {
               seen.add(d.time);
-              longData.push({ time: d.time as LightweightCharts.Time, value: d.longVal });
-              shortData.push({ time: d.time as LightweightCharts.Time, value: d.shortVal });
+              longData.push({ time: d.time as Time, value: d.longVal });
+              shortData.push({ time: d.time as Time, value: d.shortVal });
             }
           });
 
@@ -140,7 +155,6 @@ export default function LongShortChart({
 
   return (
     <div className="relative w-full">
-      {/* Legend */}
       <div className="flex items-center gap-4 mb-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-0.5 bg-emerald-500 rounded-full" />
