@@ -32,11 +32,11 @@ function TradingViewSingleQuote({ symbol }: { symbol: string }) {
   }, [symbol]);
 
   return (
-    <div className="w-full bg-neutral-900/50 rounded-xl overflow-hidden border border-neutral-800 shadow-lg">
+    <div className="w-full bg-neutral-900/50 rounded-lg md:rounded-xl overflow-hidden border border-neutral-800 shadow-md md:shadow-lg">
       <div
         ref={containerRef}
-        className="tradingview-widget-container"
-        style={{ width: "100%", height: 126 }}
+        className="tradingview-widget-container w-full h-[104px] md:h-[126px]"
+        style={{ width: "100%" }}
       />
     </div>
   );

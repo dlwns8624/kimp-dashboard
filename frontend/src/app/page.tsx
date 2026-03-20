@@ -358,7 +358,7 @@ export default function Home() {
               ];
               return (
                 <>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 sm:gap-2 md:gap-3">
                     {MACRO_WIDGETS.map(w => {
                       const isOpen = expandedMacro === w.key;
                       return (
