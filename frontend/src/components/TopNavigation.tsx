@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Settings, User } from "lucide-react";
 
 export default function TopNavigation() {
   const pathname = usePathname();
@@ -42,13 +41,9 @@ export default function TopNavigation() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-neutral-400">
-          <button className="hover:text-white transition-colors">
-            <Settings size={18} />
-          </button>
-          <button className="hover:text-white transition-colors">
-            <User size={18} />
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest hidden md:block">LIVE</span>
         </div>
       </div>
     </nav>

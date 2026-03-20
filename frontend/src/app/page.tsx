@@ -12,6 +12,11 @@ const TradingViewSingleQuote   = dynamic(() => import("@/components/TradingViewS
 
 // ─── Types (chat / liquidations only — prices come from useMarketData) ──────
 type ChatMessage = { sender: string; text: string; time: number };
+
+// ─── Chat helpers ────────────────────────────────────────────────────────────
+const NICK_POOL = ["고래", "달팽", "별빛", "사자", "곰돌", "토끼", "여우", "청매", "폭풍", "번개", "파랑", "무지"];
+const generateNickname = () => NICK_POOL[Math.floor(Math.random() * NICK_POOL.length)];
+const MSG_TTL_MS = 20 * 60 * 1000; // 20분
 type Liquidation = { symbol: string; side: "BUY" | "SELL"; price: number; qty: number; time: number };
 type SortKey     = "symbol" | "price" | "premium" | "volume" | "marketCap";
 type SortOrder   = "asc" | "desc";
@@ -47,10 +52,14 @@ export default function Home() {
   const [showAllCoins, setShowAllCoins]   = useState(false);
   const [expandedMacro, setExpandedMacro] = useState<"nasdaq" | "gold" | "fx" | null>(null);
   // Chat popup
-  const [chatOpen, setChatOpen]       = useState(false);
-  const [chatInput, setChatInput]     = useState("");
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [chatOpen, setChatOpen]         = useState(false);
+  const [chatInput, setChatInput]       = useState("");
+  const [unreadCount, setUnreadCount]   = useState(0);
   const chatBottomRef = useRef<HTMLDivElement>(null);
+  const [nickname, setNickname]         = useState<string>("");
+  const [nicknameEditing, setNicknameEditing] = useState(false);
+  const [nicknameInput, setNicknameInput]     = useState("");
+  const nicknameInputRef = useRef<HTMLInputElement>(null);
   const [notiEnabled, setNotiEnabled]       = useState(false);
   const [notiTargetKimp, setNotiTargetKimp] = useState<number>(3);
   const lastNotified = useRef<Record<string, number>>({});
@@ -118,16 +127,33 @@ export default function Home() {
     e.preventDefault();
     if (!chatInput.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
     wsRef.current.send(JSON.stringify({
-      type: "CHAT_MSG", text: chatInput,
-      sender: "User_" + Math.floor(Math.random() * 1000),
+      type: "CHAT_MSG",
+      text: chatInput,
+      sender: nickname || generateNickname(),
     }));
     setChatInput("");
+  };
+
+  const saveNickname = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = nicknameInput.trim().slice(0, 8);
+    if (!trimmed) return;
+    setNickname(trimmed);
+    localStorage.setItem("kimp_nickname", trimmed);
+    setNicknameEditing(false);
   };
 
   const toggleChat = () => {
     setChatOpen(o => {
       if (!o) {
         setUnreadCount(0);
+        // 닉네임 없으면 자동 생성
+        const saved = localStorage.getItem("kimp_nickname");
+        if (!saved) {
+          const nick = generateNickname();
+          setNickname(nick);
+          localStorage.setItem("kimp_nickname", nick);
+        }
         // 열 때 맨 아래로 스크롤
         setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
       }
@@ -141,6 +167,20 @@ export default function Home() {
       chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatParams, chatOpen]);
+
+  // localStorage에서 닉네임 로드
+  useEffect(() => {
+    const saved = localStorage.getItem("kimp_nickname");
+    if (saved) setNickname(saved);
+  }, []);
+
+  // 20분 이상된 메시지 주기적으로 제거
+  useEffect(() => {
+    const id = setInterval(() => {
+      setChatParams(prev => prev.filter(m => Date.now() - m.time < MSG_TTL_MS));
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // ── Formatters ───────────────────────────────────────────────────────────
   const fmtNum = (v: number | null | undefined, d = 0) => {
@@ -622,49 +662,90 @@ export default function Home() {
       </div>
 
       {/* ── FLOATING CHAT WIDGET ─────────────────────────────────── */}
-      {/* Chat Popup */}
       {chatOpen && (
         <div className="fixed bottom-[136px] md:bottom-20 right-2 md:right-4 z-50 w-[calc(100vw-16px)] sm:w-[380px] h-[420px] md:h-[480px] bg-neutral-900 border border-neutral-700 rounded-2xl shadow-[0_8px_40px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="p-3.5 border-b border-neutral-800 flex items-center justify-between bg-neutral-900/80 backdrop-blur-sm shrink-0">
-            <div className="flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${wsConnected ? "bg-emerald-500 animate-pulse" : "bg-neutral-600"}`} />
-              <span className="text-xs font-black uppercase tracking-widest text-neutral-100">Tribe Live Chat</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${wsConnected ? "bg-indigo-500/20 text-indigo-400" : "bg-neutral-800 text-neutral-500"}`}>
-                {wsConnected ? "LIVE" : "재연결 중..."}
-              </span>
+          <div className="px-3.5 pt-3 pb-2 border-b border-neutral-800 bg-neutral-900/80 backdrop-blur-sm shrink-0 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${wsConnected ? "bg-emerald-500 animate-pulse" : "bg-neutral-600"}`} />
+                <span className="text-xs font-black uppercase tracking-widest text-neutral-100">KIMP Chat</span>
+                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${wsConnected ? "bg-indigo-500/20 text-indigo-400" : "bg-neutral-800 text-neutral-500"}`}>
+                  {wsConnected ? "LIVE" : "재연결 중..."}
+                </span>
+              </div>
               <button onClick={toggleChat}
                 className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all text-xs font-black">
                 ✕
               </button>
             </div>
+            {/* Nickname row */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] text-neutral-600 font-bold uppercase tracking-wider shrink-0">닉네임</span>
+              {nicknameEditing ? (
+                <form onSubmit={saveNickname} className="flex items-center gap-1.5 flex-1">
+                  <input
+                    ref={nicknameInputRef}
+                    type="text"
+                    value={nicknameInput}
+                    onChange={e => setNicknameInput(e.target.value.slice(0, 8))}
+                    className="flex-1 bg-neutral-800 text-white text-[11px] font-bold px-2 py-1 rounded-lg border border-indigo-500/60 outline-none"
+                    maxLength={8}
+                    placeholder="최대 8자"
+                    autoFocus
+                  />
+                  <button type="submit" className="text-[10px] text-indigo-400 font-black px-2 py-1 rounded-lg hover:bg-indigo-500/10 transition-all shrink-0">저장</button>
+                  <button type="button" onClick={() => setNicknameEditing(false)} className="text-[10px] text-neutral-500 font-bold px-1.5 py-1 rounded-lg hover:bg-neutral-800 transition-all shrink-0">취소</button>
+                </form>
+              ) : (
+                <button
+                  onClick={() => { setNicknameInput(nickname); setNicknameEditing(true); setTimeout(() => nicknameInputRef.current?.focus(), 30); }}
+                  className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-neutral-800 transition-all group"
+                >
+                  <span className="text-[11px] font-black text-indigo-300">{nickname || "닉네임 없음"}</span>
+                  <span className="text-[10px] text-neutral-600 group-hover:text-neutral-400 transition-colors">✏️</span>
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Messages */}
+          {/* Messages — 20분 이내 메시지만 표시 */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {chatParams.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-2 text-neutral-700">
-                <span className="text-2xl">💬</span>
-                <p className="text-[10px] font-bold">시장 정황을 공유해보세요</p>
-              </div>
-            ) : chatParams.map((msg, i) => (
-              <div key={i} className="flex items-start gap-2.5 group">
-                <div className="w-6 h-6 rounded-lg bg-neutral-800 border border-neutral-700 flex-shrink-0 flex items-center justify-center text-[9px] font-black text-neutral-500 group-hover:border-indigo-500/30 transition-all">
-                  {msg.sender.charAt(0)}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-baseline gap-1.5 mb-0.5">
-                    <span className="font-bold text-[10px] text-neutral-100">{msg.sender}</span>
-                    <span className="text-[8px] text-neutral-600 font-mono">
-                      {new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
+            {(() => {
+              const visible = chatParams.filter(m => Date.now() - m.time < MSG_TTL_MS);
+              if (visible.length === 0) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-full gap-2 text-neutral-700">
+                    <span className="text-2xl">💬</span>
+                    <p className="text-[10px] font-bold">시장 정황을 공유해보세요</p>
+                    <p className="text-[9px] text-neutral-700">최근 20분 이내 메시지만 표시됩니다</p>
                   </div>
-                  <p className="text-xs text-neutral-400 leading-relaxed break-all">{msg.text}</p>
-                </div>
-              </div>
-            ))}
+                );
+              }
+              return visible.map((msg, i) => {
+                const isMe = msg.sender === nickname;
+                return (
+                  <div key={i} className={`flex items-start gap-2.5 group ${isMe ? "flex-row-reverse" : ""}`}>
+                    <div className={`w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center text-[9px] font-black transition-all
+                      ${isMe ? "bg-indigo-600/30 border border-indigo-500/40 text-indigo-300" : "bg-neutral-800 border border-neutral-700 text-neutral-500 group-hover:border-indigo-500/30"}`}>
+                      {msg.sender.charAt(0)}
+                    </div>
+                    <div className={`min-w-0 max-w-[75%] ${isMe ? "items-end" : "items-start"} flex flex-col`}>
+                      <div className={`flex items-baseline gap-1.5 mb-0.5 ${isMe ? "flex-row-reverse" : ""}`}>
+                        <span className={`font-bold text-[10px] ${isMe ? "text-indigo-300" : "text-neutral-100"}`}>{msg.sender}</span>
+                        <span className="text-[8px] text-neutral-600 font-mono">
+                          {new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      </div>
+                      <p className={`text-xs leading-relaxed break-all px-2.5 py-1.5 rounded-xl
+                        ${isMe ? "bg-indigo-600/20 text-indigo-100 rounded-tr-none" : "bg-neutral-800/60 text-neutral-300 rounded-tl-none"}`}>
+                        {msg.text}
+                      </p>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
             <div ref={chatBottomRef} />
           </div>
 
