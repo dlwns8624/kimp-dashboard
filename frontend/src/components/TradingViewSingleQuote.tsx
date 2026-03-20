@@ -33,11 +33,17 @@ function TradingViewSingleQuote({ symbol }: { symbol: string }) {
 
   return (
     <div className="w-full bg-neutral-900/50 rounded-xl overflow-hidden border border-neutral-800 shadow-lg h-[80px] md:h-[126px]">
+      {/* 모바일: scale-[0.63]로 축소 → width를 역수(159%)로 보정해 가로가 잘리지 않게 */}
       <div
-        ref={containerRef}
-        className="tradingview-widget-container"
-        style={{ width: "100%", height: "100%" }}
-      />
+        className="origin-top-left scale-[0.63] md:scale-100 w-[159%] md:w-full"
+        style={{ height: 126 }}
+      >
+        <div
+          ref={containerRef}
+          className="tradingview-widget-container"
+          style={{ width: "100%", height: 126 }}
+        />
+      </div>
     </div>
   );
 }
