@@ -11,7 +11,7 @@ const TradingViewSingleQuote   = dynamic(() => import("@/components/TradingViewS
 
 
 // ─── Types (chat / liquidations only — prices come from useMarketData) ──────
-type ChatMessage = { sender: string; text: string; time: number };
+type ChatMessage = { sender: string; text: string; time: number; isSystem?: boolean };
 
 // ─── Chat helpers ────────────────────────────────────────────────────────────
 const NICK_POOL = ["고래", "달팽", "별빛", "사자", "곰돌", "토끼", "여우", "청매", "폭풍", "번개", "파랑", "무지"];
@@ -107,7 +107,21 @@ export default function Home() {
             } else if (type === "LIQUIDATION") {
               const l = msg.payload || msg.data;
               const WATCHED = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "BNBUSDT"];
-              if (l && WATCHED.includes(l.symbol)) setLiquidations(prev => [l, ...prev].slice(0, 60));
+              if (l && WATCHED.includes(l.symbol)) {
+                setLiquidations(prev => [l, ...prev].slice(0, 60));
+                // 채팅창에 청산 알림 시스템 메시지 추가
+                const sym = l.symbol.replace("USDT", "");
+                const isLong = l.side === "SELL";
+                const amount = (l.price * l.qty).toLocaleString("en-US", { maximumFractionDigits: 0 });
+                const alertMsg: ChatMessage = {
+                  sender: "🔔 청산 알림",
+                  text: `${isLong ? "🔻 롱청산" : "🔺 숏청산"} ${sym} $${amount}`,
+                  time: l.time || Date.now(),
+                  isSystem: true,
+                };
+                setChatParams(prev => [...prev, alertMsg].slice(-100));
+                setChatOpen(open => { if (!open) setUnreadCount(n => n + 1); return open; });
+              }
             }
           } catch { /* ignore */ }
         };
@@ -282,8 +296,7 @@ export default function Home() {
                 </div>
                 </div>{/* /grid-cols-2 */}
 
-                {/* 공포·탐욕 + 환율 — 모바일 가로 배치 */}
-                <div className="grid grid-cols-2 md:block gap-2">
+                {/* 공포·탐욕 */}
                 <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
                   <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">😨 공포·탐욕</p>
                   {market.fearAndGreed ? (() => {
@@ -308,13 +321,6 @@ export default function Home() {
                     );
                   })() : <p className="text-neutral-600 text-xs">로딩 중...</p>}
                 </div>
-
-                {/* 환율 */}
-                <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
-                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-1.5">💱 USD/KRW</p>
-                  <p className="text-base md:text-xl font-black text-emerald-400">{fmtNum(market.fxRate, 1)}</p>
-                </div>
-                </div>{/* /grid-cols-2 */}
 
                 {/* 김프 알림 */}
                 <div className="pt-1 border-t border-neutral-800">
@@ -787,6 +793,27 @@ export default function Home() {
                 );
               }
               return visible.map((msg, i) => {
+                if (msg.isSystem) {
+                  // 청산 알림 시스템 메시지
+                  const isLong = msg.text.includes("🔻");
+                  return (
+                    <div key={i} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg border ${
+                      isLong
+                        ? "bg-rose-500/8 border-rose-500/20"
+                        : "bg-emerald-500/8 border-emerald-500/20"
+                    }`}>
+                      <span className="text-sm shrink-0">{isLong ? "🔻" : "🔺"}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className={`text-[10px] font-black leading-none mb-0.5 ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
+                          {msg.text.replace("🔻 ", "").replace("🔺 ", "")}
+                        </p>
+                        <p className="text-[8px] text-neutral-600 font-mono">
+                          {new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
                 const isMe = msg.sender === nickname;
                 return (
                   <div key={i} className={`flex items-start gap-2.5 group ${isMe ? "flex-row-reverse" : ""}`}>
