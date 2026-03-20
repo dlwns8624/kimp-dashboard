@@ -97,6 +97,19 @@ const state = {
   lastError: null
 };
 
+// 채팅 히스토리 (20분 TTL)
+const chatHistory = [];
+const CHAT_TTL_MS = 20 * 60 * 1000;
+
+function pruneChatHistory() {
+  const cutoff = Date.now() - CHAT_TTL_MS;
+  while (chatHistory.length > 0 && chatHistory[0].time < cutoff) {
+    chatHistory.shift();
+  }
+}
+
+setInterval(pruneChatHistory, 60_000);
+
 const numberFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 8
 });
@@ -638,15 +651,24 @@ function createServer() {
           console.log(`[Backend] WebSocket connected from ${req.socket.remoteAddress}`);
           ws.send(JSON.stringify({ type: "INIT", state }));
 
+          // 신규 접속자에게 20분 이내 채팅 히스토리 전송
+          pruneChatHistory();
+          if (chatHistory.length > 0) {
+            ws.send(JSON.stringify({ type: "CHAT_HISTORY", payload: chatHistory }));
+          }
+
           ws.on("message", (msg) => {
             try {
               const data = JSON.parse(msg);
               if (data.type === "CHAT_MSG") {
-                broadcastEvent("CHAT", {
+                const chatMsg = {
                   sender: data.sender || "유저",
                   text: data.text,
                   time: Date.now()
-                });
+                };
+                chatHistory.push(chatMsg);
+                pruneChatHistory();
+                broadcastEvent("CHAT", chatMsg);
               }
             } catch (e) { }
           });

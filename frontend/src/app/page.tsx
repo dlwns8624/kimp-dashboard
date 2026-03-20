@@ -99,9 +99,15 @@ export default function Home() {
                 setChatParams(prev => [...prev, m].slice(-100));
                 setChatOpen(open => { if (!open) setUnreadCount(n => n + 1); return open; });
               }
+            } else if (type === "CHAT_HISTORY") {
+              const history = msg.payload;
+              if (Array.isArray(history) && history.length > 0) {
+                setChatParams(history.slice(-100));
+              }
             } else if (type === "LIQUIDATION") {
               const l = msg.payload || msg.data;
-              if (l) setLiquidations(prev => [l, ...prev].slice(0, 50));
+              const WATCHED = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "BNBUSDT"];
+              if (l && WATCHED.includes(l.symbol)) setLiquidations(prev => [l, ...prev].slice(0, 60));
             }
           } catch { /* ignore */ }
         };
@@ -628,31 +634,89 @@ export default function Home() {
               {rightTab === "whale" ? (
                 <WhaleWatch />
               ) : (
-                <div className="h-full overflow-y-auto p-4 space-y-2">
+                <div className="h-full overflow-y-auto">
                   {liquidations.length === 0 ? (
                     <div className="text-center py-20 flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-2 border-neutral-800 border-t-rose-500/50 rounded-full animate-spin" />
-                      <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">
-                        Waiting for liquidation events...
+                      <p className="text-sm font-black text-neutral-600 uppercase tracking-widest">
+                        BTC · ETH · SOL · XRP · BNB 청산 대기 중...
                       </p>
                     </div>
-                  ) : liquidations.map((liq, i) => (
-                    <div key={i} className="flex justify-between items-center bg-neutral-950/20 hover:bg-neutral-950/40 p-3 rounded-xl border border-neutral-800/40 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg text-[10px] font-black uppercase tracking-tighter ${liq.side === "SELL" ? "bg-rose-500/10 text-rose-500" : "bg-emerald-500/10 text-emerald-500"}`}>
-                          {liq.side === "SELL" ? "LONG REKT" : "SHORT REKT"}
-                        </div>
-                        <div>
-                          <p className="font-black text-xs text-white leading-tight">{liq.symbol}</p>
-                          <p className="text-[9px] text-neutral-600 font-bold">{new Date(liq.time).toLocaleTimeString()}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-black text-white mb-0.5">${fmtNum(liq.price * liq.qty, 0)}</p>
-                        <p className="text-[9px] font-medium text-neutral-500">Price: ${fmtNum(liq.price, 2)}</p>
-                      </div>
-                    </div>
-                  ))}
+                  ) : (
+                    <table className="w-full border-collapse">
+                      <thead className="sticky top-0 z-10 bg-neutral-900/95 backdrop-blur-sm">
+                        <tr className="border-b border-neutral-800">
+                          <th className="px-4 py-2.5 text-left text-xs font-black text-neutral-500 uppercase tracking-wider">코인</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-black text-neutral-500 uppercase tracking-wider">유형</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-black text-neutral-500 uppercase tracking-wider">청산금액</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-black text-neutral-500 uppercase tracking-wider hidden md:table-cell">가격</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-black text-neutral-500 uppercase tracking-wider">시간</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {liquidations.map((liq, i) => {
+                          const sym = liq.symbol.replace("USDT", "");
+                          const isLong = liq.side === "SELL";
+                          const COIN_COLORS: Record<string, { bg: string; text: string }> = {
+                            BTC: { bg: "rgba(247,147,26,0.15)", text: "#f7931a" },
+                            ETH: { bg: "rgba(98,126,234,0.15)", text: "#627eea" },
+                            SOL: { bg: "rgba(153,69,255,0.15)", text: "#9945ff" },
+                            XRP: { bg: "rgba(0,154,218,0.15)", text: "#009ada" },
+                            BNB: { bg: "rgba(243,186,47,0.15)", text: "#f3ba2f" },
+                          };
+                          const coinColor = COIN_COLORS[sym] ?? { bg: "rgba(255,255,255,0.05)", text: "#a3a3a3" };
+                          return (
+                            <tr
+                              key={i}
+                              className={`border-b border-neutral-800/30 transition-colors hover:bg-neutral-800/20 ${i === 0 ? "animate-pulse" : ""}`}
+                            >
+                              {/* 코인 로고 + 심볼 */}
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2.5">
+                                  <div
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm shrink-0"
+                                    style={{ background: coinColor.bg, color: coinColor.text, border: `1px solid ${coinColor.text}30` }}
+                                  >
+                                    {sym.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-black text-white leading-none">{sym}</p>
+                                    <p className="text-[10px] text-neutral-600 font-mono mt-0.5">USDT·PERP</p>
+                                  </div>
+                                </div>
+                              </td>
+                              {/* 유형 */}
+                              <td className="px-4 py-3">
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black ${
+                                  isLong ? "bg-rose-500/15 text-rose-400 border border-rose-500/20" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
+                                }`}>
+                                  {isLong ? "🔻 롱 청산" : "🔺 숏 청산"}
+                                </span>
+                              </td>
+                              {/* 청산금액 */}
+                              <td className="px-4 py-3 text-right">
+                                <p className={`text-base font-black ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
+                                  ${fmtNum(liq.price * liq.qty, 0)}
+                                </p>
+                              </td>
+                              {/* 가격 */}
+                              <td className="px-4 py-3 text-right hidden md:table-cell">
+                                <p className="text-sm text-neutral-400 font-mono font-bold">
+                                  ${fmtNum(liq.price, liq.price >= 100 ? 2 : liq.price >= 1 ? 4 : 6)}
+                                </p>
+                              </td>
+                              {/* 시간 */}
+                              <td className="px-4 py-3 text-right">
+                                <p className="text-xs text-neutral-500 font-mono">
+                                  {new Date(liq.time).toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                                </p>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               )}
             </div>
