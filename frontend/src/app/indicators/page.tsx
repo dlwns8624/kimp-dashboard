@@ -16,28 +16,26 @@ const TABS: { key: TabKey; label: string; emoji: string }[] = [
 ];
 
 // ── 심볼 데이터 ──────────────────────────────────────────────────────────────
+// TVC: 심볼은 single-quote 위젯에서 안정적으로 동작 (FOREXCOM: 미지원)
 const STOCKS = [
-  { symbol: "FOREXCOM:DJI",    label: "다우존스",        sub: "Dow Jones Industrial" },
-  { symbol: "FOREXCOM:NSXUSD", label: "나스닥 100",      sub: "NASDAQ 100 Index" },
-  { symbol: "FOREXCOM:SPX500", label: "S&P 500",         sub: "S&P 500 Index" },
-  { symbol: "CME_MINI:NQ1!",   label: "NQ 선물",         sub: "NASDAQ 100 Futures" },
-  { symbol: "FOREXCOM:JPN225", label: "니케이 225",      sub: "Nikkei 225 Index" },
-  { symbol: "OANDA:HK33HKD",   label: "항셍",            sub: "Hang Seng Index" },
-  { symbol: "FOREXCOM:UK100",  label: "FTSE 100",        sub: "UK 100 Index" },
-  { symbol: "FOREXCOM:GRXEUR", label: "DAX",             sub: "DAX 40 Index" },
-  { symbol: "FOREXCOM:FRA40",  label: "CAC 40",          sub: "France 40 Index" },
-  { symbol: "TVC:KOSPI",       label: "코스피",          sub: "KOSPI Index" },
-  { symbol: "TVC:KOSDAQ",      label: "코스닥",          sub: "KOSDAQ Index" },
-  { symbol: "SSE:000001",      label: "상해 종합",       sub: "SSE Composite Index" },
+  { symbol: "TVC:US30",    label: "다우존스",   sub: "Dow Jones Industrial" },
+  { symbol: "TVC:NAS100",  label: "나스닥 100", sub: "NASDAQ 100 Index" },
+  { symbol: "TVC:SPX500",  label: "S&P 500",    sub: "S&P 500 Index" },
+  { symbol: "TVC:NKY",     label: "니케이 225", sub: "Nikkei 225 Index" },
+  { symbol: "SSE:000001",  label: "상해 종합",  sub: "SSE Composite Index" },
+  { symbol: "TVC:HSI",     label: "항셍",       sub: "Hang Seng Index" },
+  { symbol: "TVC:UK100",   label: "FTSE 100",   sub: "UK 100 Index" },
+  { symbol: "TVC:FRA40",   label: "CAC 40",     sub: "France 40 Index" },
+  { symbol: "TVC:DEU40",   label: "DAX",        sub: "DAX 40 Index" },
 ];
 
 const COMMODITIES = [
-  { symbol: "TVC:GOLD",       label: "금 (Gold)",       sub: "Gold / USD Spot" },
-  { symbol: "TVC:SILVER",     label: "은 (Silver)",     sub: "Silver / USD Spot" },
-  { symbol: "TVC:USOIL",      label: "WTI 원유",        sub: "WTI Crude Oil" },
-  { symbol: "TVC:UKOIL",      label: "브렌트 원유",     sub: "Brent Crude Oil" },
-  { symbol: "TVC:COPPER",     label: "구리",            sub: "Copper CFDS" },
-  { symbol: "TVC:NATGAS",     label: "천연가스",        sub: "Natural Gas Spot" },
+  { symbol: "TVC:GOLD",    label: "금 (Gold)",    sub: "Gold / USD Spot" },
+  { symbol: "TVC:SILVER",  label: "은 (Silver)",  sub: "Silver / USD Spot" },
+  { symbol: "TVC:COPPER",  label: "구리",          sub: "Copper CFDS" },
+  { symbol: "TVC:USOIL",   label: "WTI 원유",     sub: "WTI Crude Oil" },
+  { symbol: "TVC:UKOIL",   label: "브렌트 원유",  sub: "Brent Crude Oil" },
+  { symbol: "TVC:NATGAS",  label: "천연가스",      sub: "Natural Gas Spot" },
 ];
 
 const FOREX = [
