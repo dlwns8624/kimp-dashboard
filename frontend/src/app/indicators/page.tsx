@@ -4,16 +4,11 @@ import React, { useState } from "react";
 import dynamic from "next/dynamic";
 
 const TradingViewSingleQuote = dynamic(() => import("@/components/TradingViewSingleQuote"), { ssr: false });
-const TradingViewMarketWidget = dynamic(() => import("@/components/TradingViewMarketWidget"), {
-  ssr: false,
-  loading: () => <div className="h-[600px] w-full bg-neutral-900 animate-pulse rounded-2xl" />,
-});
 
-// ── 탭 정의 ─────────────────────────────────────────────────────────────────
-type TabKey = "overview" | "stocks" | "commodities" | "forex" | "crypto";
+// ── 탭 정의 (시장 차트 제거) ───────────────────────────────────────────────
+type TabKey = "stocks" | "commodities" | "forex" | "crypto";
 
 const TABS: { key: TabKey; label: string; emoji: string }[] = [
-  { key: "overview",    label: "시장 차트",  emoji: "🌐" },
   { key: "stocks",      label: "주식지수",   emoji: "📈" },
   { key: "commodities", label: "원자재",     emoji: "🏅" },
   { key: "forex",       label: "통화",       emoji: "💱" },
@@ -22,18 +17,18 @@ const TABS: { key: TabKey; label: string; emoji: string }[] = [
 
 // ── 심볼 데이터 ──────────────────────────────────────────────────────────────
 const STOCKS = [
-  { symbol: "TVC:US30",       label: "다우존스",        sub: "Dow Jones Industrial" },
-  { symbol: "TVC:NAS100",     label: "나스닥 100",      sub: "NASDAQ 100 Index" },
-  { symbol: "TVC:SPX500",     label: "S&P 500",         sub: "S&P 500 Index" },
-  { symbol: "CME_MINI:NQ1!",  label: "NQ 선물",         sub: "NASDAQ 100 Futures" },
-  { symbol: "TVC:NKY",        label: "니케이 225",      sub: "Nikkei 225 Index" },
-  { symbol: "TVC:HSI",        label: "항셍",            sub: "Hang Seng Index" },
-  { symbol: "TVC:UK100",      label: "FTSE 100",        sub: "UK 100 Index" },
-  { symbol: "TVC:DEU40",      label: "DAX",             sub: "DAX 40 Index" },
-  { symbol: "TVC:FRA40",      label: "CAC 40",          sub: "France 40 Index" },
-  { symbol: "KRX:KOSPI",      label: "코스피",          sub: "KOSPI Index" },
-  { symbol: "KRX:KOSDAQ",     label: "코스닥",          sub: "KOSDAQ Index" },
-  { symbol: "SSE:000001",     label: "상해 종합",       sub: "SSE Composite Index" },
+  { symbol: "FOREXCOM:DJI",    label: "다우존스",        sub: "Dow Jones Industrial" },
+  { symbol: "FOREXCOM:NSXUSD", label: "나스닥 100",      sub: "NASDAQ 100 Index" },
+  { symbol: "FOREXCOM:SPX500", label: "S&P 500",         sub: "S&P 500 Index" },
+  { symbol: "CME_MINI:NQ1!",   label: "NQ 선물",         sub: "NASDAQ 100 Futures" },
+  { symbol: "FOREXCOM:JPN225", label: "니케이 225",      sub: "Nikkei 225 Index" },
+  { symbol: "OANDA:HK33HKD",   label: "항셍",            sub: "Hang Seng Index" },
+  { symbol: "FOREXCOM:UK100",  label: "FTSE 100",        sub: "UK 100 Index" },
+  { symbol: "FOREXCOM:GRXEUR", label: "DAX",             sub: "DAX 40 Index" },
+  { symbol: "FOREXCOM:FRA40",  label: "CAC 40",          sub: "France 40 Index" },
+  { symbol: "TVC:KOSPI",       label: "코스피",          sub: "KOSPI Index" },
+  { symbol: "TVC:KOSDAQ",      label: "코스닥",          sub: "KOSDAQ Index" },
+  { symbol: "SSE:000001",      label: "상해 종합",       sub: "SSE Composite Index" },
 ];
 
 const COMMODITIES = [
@@ -124,13 +119,6 @@ export default function IndicatorsPage() {
 
       {/* 탭 콘텐츠 */}
       <div className="max-w-[1400px] mx-auto px-2.5 md:px-8 py-4 md:py-6">
-
-        {activeTab === "overview" && (
-          <div className="space-y-4">
-            <SectionHeader title="글로벌 시장 전체 흐름" desc="주요 지수, 원자재, 외환 실시간 요약" />
-            <TradingViewMarketWidget />
-          </div>
-        )}
 
         {activeTab === "stocks" && (
           <div className="space-y-4">

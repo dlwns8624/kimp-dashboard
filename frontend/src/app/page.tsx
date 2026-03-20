@@ -303,9 +303,9 @@ export default function Home() {
                   key: "nasdaq" as const,
                   label: "NASDAQ 100", shortLabel: "NQ100",
                   value: fmtNum(market.nasdaq, 1),
-                  sub: "선물", tagColor: "text-indigo-400",
+                  sub: "현물", tagColor: "text-indigo-400",
                   accent: "hover:border-indigo-500/30", grad: "from-indigo-500/10",
-                  tvSymbol: "CME_MINI:NQ1!",
+                  tvSymbol: "FOREXCOM:NSXUSD",
                 },
                 {
                   key: "gold" as const,
@@ -313,7 +313,7 @@ export default function Home() {
                   value: "$" + fmtNum(market.gold, 1),
                   sub: "현물", tagColor: "text-orange-400",
                   accent: "hover:border-orange-500/30", grad: "from-orange-500/10",
-                  tvSymbol: "TVC:GOLD",
+                  tvSymbol: "OANDA:XAUUSD",
                 },
                 {
                   key: "fx" as const,
@@ -321,7 +321,7 @@ export default function Home() {
                   value: "₩" + fmtNum(market.fxRate, 2),
                   sub: "환율", tagColor: "text-emerald-400",
                   accent: "hover:border-emerald-500/30", grad: "from-emerald-500/10",
-                  tvSymbol: "FX:USDKRW",
+                  tvSymbol: "FX_IDC:USDKRW",
                 },
               ];
               return (
@@ -373,7 +373,7 @@ export default function Home() {
                             className="text-neutral-600 hover:text-white text-xs font-black px-2 py-1 rounded-lg hover:bg-neutral-800 transition-all">✕</button>
                         </div>
                         <Chart
-                          symbol={card.key === "nasdaq" ? "NDX" : card.key === "gold" ? "GOLD" : "USDKRW"}
+                          symbol={card.key === "nasdaq" ? "FOREXCOM:NSXUSD" : card.key === "gold" ? "OANDA:XAUUSD" : "FX_IDC:USDKRW"}
                           tvSymbol={card.tvSymbol}
                           displayName={card.label}
                           subName="TradingView · Macro"
