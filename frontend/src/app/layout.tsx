@@ -33,7 +33,7 @@ export default function RootLayout({
           {children}
         </main>
 
-        <footer className="w-full border-t border-neutral-800 px-3 md:px-8 py-6 md:py-8">
+        <footer className="w-full border-t border-neutral-800 px-3 md:px-8 pt-6 pb-24 md:pt-8 md:pb-8">
           <div className="max-w-[1600px] mx-auto space-y-3">
             <p className="text-[10px] md:text-[11px] text-neutral-600 leading-relaxed whitespace-pre-wrap">
               김프리는 사이트 내 모든 암호화폐 가격 및 투자 관련 정보에 대하여 어떠한 책임을 부담하지 않습니다.
