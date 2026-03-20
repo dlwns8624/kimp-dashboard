@@ -461,8 +461,12 @@ function createServer() {
   app.get("/api/long-short", async (req, res) => {
     const symbol = req.query.symbol || "BTCUSDT";
     const period = req.query.period || "1h";
+    const type = req.query.type || "global"; // "global" or "top"
     try {
-      const url = `https://fapi.binance.com/futures/data/globalLongShortAccountRatio?symbol=${symbol}&period=${period}&limit=30`;
+      const endpoint = type === "top"
+        ? "topLongShortAccountRatio"
+        : "globalLongShortAccountRatio";
+      const url = `https://fapi.binance.com/futures/data/${endpoint}?symbol=${symbol}&period=${period}&limit=30`;
       const data = await fetchJson(url).catch(() => null);
       if (!data || !Array.isArray(data) || data.length === 0) {
         const now = Date.now();

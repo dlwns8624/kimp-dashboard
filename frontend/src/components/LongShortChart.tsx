@@ -7,12 +7,18 @@ import { API_BASE_URL } from "@/lib/constants";
 interface ChartProps {
   symbol: string;
   timeframe: string;
+  traderType?: "top" | "global";
+  chartType?: "line" | "area";
 }
 
-export default function LongShortChart({ symbol, timeframe }: ChartProps) {
+export default function LongShortChart({
+  symbol,
+  timeframe,
+  traderType = "global",
+  chartType = "area",
+}: ChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<LightweightCharts.IChartApi | null>(null);
-  const seriesRef = useRef<LightweightCharts.ISeriesApi<"Area"> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -30,22 +36,44 @@ export default function LongShortChart({ symbol, timeframe }: ChartProps) {
       width: chartContainerRef.current.clientWidth,
       height: 400,
       rightPriceScale: {
-        scaleMargins: {
-          top: 0.2,
-          bottom: 0.2,
-        },
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+      },
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
       },
     });
     chartRef.current = chart;
 
-    const areaSeries = (chart as any).addAreaSeries({
-      topColor: "rgba(16, 185, 129, 0.4)",
-      bottomColor: "rgba(16, 185, 129, 0)",
-      lineColor: "#10b981",
-      lineWidth: 2,
-    });
-    seriesRef.current = areaSeries;
-    if (!areaSeries) return;
+    let longSeries: any;
+    let shortSeries: any;
+
+    if (chartType === "area") {
+      longSeries = (chart as any).addAreaSeries({
+        topColor: "rgba(16, 185, 129, 0.3)",
+        bottomColor: "rgba(16, 185, 129, 0)",
+        lineColor: "#10b981",
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      shortSeries = (chart as any).addAreaSeries({
+        topColor: "rgba(244, 63, 94, 0.3)",
+        bottomColor: "rgba(244, 63, 94, 0)",
+        lineColor: "#f43f5e",
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+    } else {
+      longSeries = (chart as any).addLineSeries({
+        color: "#10b981",
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+      shortSeries = (chart as any).addLineSeries({
+        color: "#f43f5e",
+        lineWidth: 2,
+        priceLineVisible: false,
+      });
+    }
 
     const handleResize = () => {
       if (chart && chartContainerRef.current) {
@@ -54,49 +82,51 @@ export default function LongShortChart({ symbol, timeframe }: ChartProps) {
     };
     window.addEventListener("resize", handleResize);
 
-    // Fetch Real Data
     setLoading(true);
-    fetch(`${API_BASE_URL}/api/long-short?symbol=${symbol}USDT&period=${timeframe}`)
+    fetch(
+      `${API_BASE_URL}/api/long-short?symbol=${symbol}USDT&period=${timeframe}&type=${traderType}`
+    )
       .then((res) => res.json())
       .then((data) => {
         if (!data || !Array.isArray(data) || data.length === 0) {
-            setLoading(false);
-            return;
+          setLoading(false);
+          return;
         }
-        
-        const formattedData = data
-          .map((d: any) => {
-            const time = Math.floor(new Date(d.timestamp).getTime() / 1000);
-            const value = parseFloat(d.longAccount) * 100;
-            if (isNaN(time) || isNaN(value)) return null;
-            return { time: time as import("lightweight-charts").Time, value };
-          })
-          .filter((item): item is { time: import("lightweight-charts").Time; value: number } => item !== null)
-          .sort((a, b) => (a.time as number) - (b.time as number));
 
-        // Ensure unique ascending times
-        const uniqueData: any[] = [];
-        const seen = new Set();
-        formattedData.forEach((item: any) => {
-            if (!seen.has(item.time)) {
-                seen.add(item.time);
-                uniqueData.push(item);
-            }
-        });
+        const seen = new Set<number>();
+        const longData: any[] = [];
+        const shortData: any[] = [];
 
-        if (uniqueData.length > 0 && areaSeries) {
-            try {
-                areaSeries.setData(uniqueData);
-                chartRef.current?.timeScale().fitContent();
-            } catch (error) {
-                console.error("Error setting chart data:", error);
+        data
+          .map((d: any) => ({
+            time: Math.floor(new Date(d.timestamp).getTime() / 1000),
+            longVal: parseFloat(d.longAccount) * 100,
+            shortVal: parseFloat(d.shortAccount) * 100,
+          }))
+          .filter((d) => !isNaN(d.time) && !isNaN(d.longVal) && !isNaN(d.shortVal))
+          .sort((a, b) => a.time - b.time)
+          .forEach((d) => {
+            if (!seen.has(d.time)) {
+              seen.add(d.time);
+              longData.push({ time: d.time as LightweightCharts.Time, value: d.longVal });
+              shortData.push({ time: d.time as LightweightCharts.Time, value: d.shortVal });
             }
+          });
+
+        if (longData.length > 0) {
+          try {
+            longSeries.setData(longData);
+            shortSeries.setData(shortData);
+            chart.timeScale().fitContent();
+          } catch (err) {
+            console.error("Chart data error:", err);
+          }
         }
         setLoading(false);
       })
       .catch((err) => {
-          console.error("Failed to fetch long/short data", err);
-          setLoading(false);
+        console.error("Failed to fetch long/short data", err);
+        setLoading(false);
       });
 
     return () => {
@@ -106,16 +136,30 @@ export default function LongShortChart({ symbol, timeframe }: ChartProps) {
         chartRef.current = null;
       }
     };
-  }, [symbol, timeframe]);
+  }, [symbol, timeframe, traderType, chartType]);
 
   return (
-    <div className="relative w-full h-[400px]">
-      {loading && (
+    <div className="relative w-full">
+      {/* Legend */}
+      <div className="flex items-center gap-4 mb-2">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-0.5 bg-emerald-500 rounded-full" />
+          <span className="text-[10px] text-neutral-500 font-bold">Long %</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-0.5 bg-rose-500 rounded-full" />
+          <span className="text-[10px] text-neutral-500 font-bold">Short %</span>
+        </div>
+      </div>
+
+      <div className="relative h-[400px]">
+        {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 backdrop-blur-sm rounded-lg">
-              <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
           </div>
-      )}
-      <div ref={chartContainerRef} className="w-full h-full" />
+        )}
+        <div ref={chartContainerRef} className="w-full h-full" />
+      </div>
     </div>
   );
 }
