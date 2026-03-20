@@ -5,8 +5,9 @@ import dynamic from "next/dynamic";
 import { WS_BASE_URL } from "@/lib/constants";
 import { useMarketData, type CoinData } from "@/hooks/useMarketData";
 
-const Chart                  = dynamic(() => import("@/components/Chart"),                  { ssr: false });
-const WhaleWatch             = dynamic(() => import("@/components/WhaleWatch"),             { ssr: false });
+const Chart                    = dynamic(() => import("@/components/Chart"),                  { ssr: false });
+const WhaleWatch               = dynamic(() => import("@/components/WhaleWatch"),             { ssr: false });
+const TradingViewSingleQuote   = dynamic(() => import("@/components/TradingViewSingleQuote"), { ssr: false });
 
 
 // ─── Types (chat / liquidations only — prices come from useMarketData) ──────
@@ -296,86 +297,47 @@ export default function Home() {
           {/* MAIN CONTENT (9/12) — 모바일에선 먼저 표시 */}
           <div className="lg:col-span-9 order-1 lg:order-2 space-y-2.5 md:space-y-4">
 
-            {/* Macro Cards — 모바일도 항상 3열 */}
+            {/* Macro Cards — TradingView 실시간 위젯 */}
             {(() => {
-              const CARDS = [
-                {
-                  key: "nasdaq" as const,
-                  label: "NASDAQ 100", shortLabel: "NQ100",
-                  value: fmtNum(market.nasdaq, 1),
-                  sub: "현물", tagColor: "text-indigo-400",
-                  accent: "hover:border-indigo-500/30", grad: "from-indigo-500/10",
-                  tvSymbol: "FOREXCOM:NSXUSD",
-                },
-                {
-                  key: "gold" as const,
-                  label: "GOLD / USD", shortLabel: "GOLD",
-                  value: "$" + fmtNum(market.gold, 1),
-                  sub: "현물", tagColor: "text-orange-400",
-                  accent: "hover:border-orange-500/30", grad: "from-orange-500/10",
-                  tvSymbol: "OANDA:XAUUSD",
-                },
-                {
-                  key: "fx" as const,
-                  label: "USD / KRW", shortLabel: "USDKRW",
-                  value: "₩" + fmtNum(market.fxRate, 2),
-                  sub: "환율", tagColor: "text-emerald-400",
-                  accent: "hover:border-emerald-500/30", grad: "from-emerald-500/10",
-                  tvSymbol: "FX_IDC:USDKRW",
-                },
+              const MACRO_WIDGETS = [
+                { key: "nasdaq" as const, symbol: "FOREXCOM:NSXUSD", label: "NASDAQ 100",  tagColor: "text-indigo-400" },
+                { key: "gold"   as const, symbol: "OANDA:XAUUSD",    label: "GOLD / USD",  tagColor: "text-orange-400" },
+                { key: "fx"     as const, symbol: "FX_IDC:USDKRW",   label: "USD / KRW",   tagColor: "text-emerald-400" },
               ];
               return (
                 <>
-                  <div className="grid grid-cols-3 gap-2 md:gap-4">
-                    {CARDS.map(card => {
-                      const isOpen = expandedMacro === card.key;
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
+                    {MACRO_WIDGETS.map(w => {
+                      const isOpen = expandedMacro === w.key;
                       return (
-                        <button
-                          key={card.key}
-                          onClick={() => setExpandedMacro(isOpen ? null : card.key)}
-                          className={`bg-neutral-900 border rounded-xl md:rounded-2xl p-2 md:p-4 shadow-lg text-left transition-all group ${card.accent} ${isOpen ? "border-indigo-500/40 bg-neutral-800/60" : "border-neutral-800"}`}
-                        >
-                          {/* 레이블 */}
-                          <div className="flex justify-between items-start mb-1 md:mb-2">
-                            <span className="text-[8px] md:text-[10px] font-black text-neutral-500 uppercase tracking-widest leading-tight">
-                              <span className="hidden sm:inline">{card.label}</span>
-                              <span className="sm:hidden">{card.shortLabel}</span>
-                            </span>
-                            <span className={`text-[8px] md:text-[10px] font-bold ${card.tagColor}`}>
-                              {isOpen ? "▲" : "▼"}
-                            </span>
-                          </div>
-                          {/* 가격 */}
-                          <div className="flex items-baseline gap-1 flex-wrap">
-                            <span className="text-sm sm:text-lg md:text-2xl font-black text-white leading-none">{card.value}</span>
-                          </div>
-                          <p className={`text-[8px] md:text-[10px] font-bold mt-0.5 md:mt-1 ${card.tagColor}`}>{card.sub}</p>
-                          {/* 그라데이션 바 (데스크탑만) */}
-                          <div className="hidden md:block w-full bg-neutral-950 h-6 rounded-lg border border-neutral-800/50 overflow-hidden relative mt-2">
-                            <div className={`absolute inset-0 bg-gradient-to-r ${card.grad} to-transparent`} />
-                          </div>
-                        </button>
+                        <div key={w.key} className="space-y-1">
+                          <button
+                            onClick={() => setExpandedMacro(isOpen ? null : w.key)}
+                            className="w-full text-left"
+                          >
+                            <TradingViewSingleQuote symbol={w.symbol} />
+                          </button>
+                        </div>
                       );
                     })}
                   </div>
 
-                  {/* TradingView 차트 확장 패널 */}
                   {expandedMacro && (() => {
-                    const card = CARDS.find(c => c.key === expandedMacro)!;
+                    const w = MACRO_WIDGETS.find(c => c.key === expandedMacro)!;
                     return (
                       <div className="bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-2xl overflow-hidden shadow-xl">
                         <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-neutral-800 bg-neutral-950/40">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${card.tagColor}`}>{card.label}</span>
-                            <span className="text-[9px] text-neutral-600 font-mono">{card.tvSymbol}</span>
+                            <span className={`text-[10px] font-black uppercase tracking-widest ${w.tagColor}`}>{w.label}</span>
+                            <span className="text-[9px] text-neutral-600 font-mono">{w.symbol}</span>
                           </div>
                           <button onClick={() => setExpandedMacro(null)}
                             className="text-neutral-600 hover:text-white text-xs font-black px-2 py-1 rounded-lg hover:bg-neutral-800 transition-all">✕</button>
                         </div>
                         <Chart
-                          symbol={card.key === "nasdaq" ? "FOREXCOM:NSXUSD" : card.key === "gold" ? "OANDA:XAUUSD" : "FX_IDC:USDKRW"}
-                          tvSymbol={card.tvSymbol}
-                          displayName={card.label}
+                          symbol={w.symbol}
+                          tvSymbol={w.symbol}
+                          displayName={w.label}
                           subName="TradingView · Macro"
                         />
                       </div>
