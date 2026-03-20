@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 
 const TradingViewSingleQuote = dynamic(() => import("@/components/TradingViewSingleQuote"), { ssr: false });
 
+// ── 탭 정의 ─────────────────────────────────────────────────────────────────
 type TabKey = "stocks" | "commodities" | "forex" | "crypto";
 
 const TABS: { key: TabKey; label: string; emoji: string }[] = [

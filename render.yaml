@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: kimp-backend
+    name: kimpre-backend
     env: node
     buildCommand: npm install
     startCommand: npm start

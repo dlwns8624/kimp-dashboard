@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "트렌딩 트라이브 - 실시간 김치 프리미엄 & 글로벌 코인 정보",
+  title: "kimpre - 실시간 김치 프리미엄 & 글로벌 코인 정보",
   description: "업비트, 빗썸, 바이낸스의 실시간 시세를 추적하고 코인별 김치 프리미엄과 롱/숏 비율, 청산 알림을 제공합니다.",
 };
 

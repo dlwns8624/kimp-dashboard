@@ -61,7 +61,7 @@ export default function Home() {
   const [nicknameInput, setNicknameInput]     = useState("");
   const nicknameInputRef = useRef<HTMLInputElement>(null);
   const [notiEnabled, setNotiEnabled]       = useState(false);
-  const [notiTargetKimp, setNotiTargetKimp] = useState<number>(3);
+  const [notiTargetKimpre, setNotiTargetKimpre] = useState<number>(3);
   const lastNotified = useRef<Record<string, number>>({});
 
   // ── Notifications ─────────────────────────────────────────────────────
@@ -71,12 +71,12 @@ export default function Home() {
     Object.values(coins).forEach(coin => {
       const prem     = coin.premium;
       const lastTime = lastNotified.current[coin.symbol] || 0;
-      if (prem >= notiTargetKimp && now - lastTime > 5 * 60_000) {
+      if (prem >= notiTargetKimpre && now - lastTime > 5 * 60_000) {
         lastNotified.current[coin.symbol] = now;
-        new Notification("Kimp Alert", { body: `${coin.symbol} 업비트 김프 ${prem.toFixed(2)}% 도달!` });
+        new Notification("kimpre 알림", { body: `${coin.symbol} 업비트 김프 ${prem.toFixed(2)}% 도달!` });
       }
     });
-  }, [notiEnabled, notiTargetKimp]);
+  }, [notiEnabled, notiTargetKimpre]);
 
   useEffect(() => {
     if (market.isLive) checkNotifications(market.coins);
@@ -333,8 +333,8 @@ export default function Home() {
                   <div className="flex items-center justify-between bg-neutral-950/50 p-2.5 rounded-xl border border-neutral-800">
                     <span className="text-[11px] font-bold text-neutral-400 uppercase">기준 김프</span>
                     <div className="flex items-center gap-1.5">
-                      <input type="number" value={notiTargetKimp}
-                        onChange={e => setNotiTargetKimp(Number(e.target.value))}
+                      <input type="number" value={notiTargetKimpre}
+                        onChange={e => setNotiTargetKimpre(Number(e.target.value))}
                         className="w-12 bg-transparent text-white font-bold text-right outline-none focus:text-indigo-400"
                         disabled={!notiEnabled} />
                       <span className="text-[11px] font-bold text-neutral-600">%</span>
@@ -748,7 +748,7 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${wsConnected ? "bg-emerald-500 animate-pulse" : "bg-neutral-600"}`} />
-                <span className="text-xs font-black uppercase tracking-widest text-neutral-100">KIMP Chat</span>
+                <span className="text-xs font-black uppercase tracking-widest text-neutral-100">kimpre Chat</span>
                 <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${wsConnected ? "bg-indigo-500/20 text-indigo-400" : "bg-neutral-800 text-neutral-500"}`}>
                   {wsConnected ? "LIVE" : "재연결 중..."}
                 </span>

@@ -19,7 +19,7 @@ export default function TopNavigation() {
       <div className="max-w-[1600px] mx-auto px-4 md:px-8 flex items-center justify-between h-14">
         <div className="flex items-center gap-8">
           <Link href="/" className="text-xl font-black tracking-tight text-white hover:text-indigo-400 transition-colors">
-            KIMP
+            kimpre
           </Link>
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {

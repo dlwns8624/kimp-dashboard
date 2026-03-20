@@ -67,7 +67,7 @@ const COINS = [
   { symbol: "GLM", upbit: "KRW-GLM", bithumb: "GLM", binance: "GLMUSDT" },
   { symbol: "JUP", upbit: "KRW-JUP", bithumb: "JUP", binance: "JUPUSDT" },
 
-  // Others matching Kimpga variety
+  // Others matching reference exchange variety
   { symbol: "MASK", upbit: "KRW-MASK", bithumb: "MASK", binance: "MASKUSDT" },
   { symbol: "CELO", upbit: "KRW-CELO", bithumb: "CELO", binance: "CELOUSDT" },
   { symbol: "FLOW", upbit: "KRW-FLOW", bithumb: "FLOW", binance: "FLOWUSDT" },
@@ -118,7 +118,7 @@ function fetchJson(url, timeoutMs = 6000) {
   return new Promise((resolve, reject) => {
     const req = https.get(
       url,
-      { timeout: timeoutMs, headers: { "User-Agent": "kimp-dashboard/0.1" } },
+      { timeout: timeoutMs, headers: { "User-Agent": "kimpre-dashboard/0.1" } },
       (res) => {
         let body = "";
         res.on("data", (chunk) => {
@@ -453,7 +453,7 @@ function createServer() {
     allowedHeaders: ["Content-Type", "Authorization"]
   }));
 
-  app.get("/", (req, res) => res.send("KIMP Dashboard Backend Active"));
+  app.get("/", (req, res) => res.send("kimpre Dashboard Backend Active"));
   app.get("/api/debug", (req, res) => res.json(state));
 
   // REST polling endpoint for frontend fallback
@@ -533,9 +533,9 @@ function createServer() {
       } else {
         // Fallback
         const mockNews = [
-          { id: "f1", title: "Bitcoin Consolidation Continues Near $74k", body: "Market analysts suggest a period of price discovery as BTC holds steady.", source: "CryptoCompare (Mock)", published_on: Math.floor(Date.now() / 1000 - 3600), url: "https://kimp.co.kr" },
-          { id: "f2", title: "Global Regulatory Shifts for Stablecoins", body: "New standard guidelines are being discussed by G7 finance ministers.", source: "KIMP News", published_on: Math.floor(Date.now() / 1000 - 7200), url: "https://kimp.co.kr" },
-          { id: "f3", title: "Ethereum Layer 2 Adoption Spikes", body: "Transaction counts on key L2 networks reach all-time highs as fees drop.", source: "KIMP News", published_on: Math.floor(Date.now() / 1000 - 10800), url: "https://kimp.co.kr" }
+          { id: "f1", title: "Bitcoin Consolidation Continues Near $74k", body: "Market analysts suggest a period of price discovery as BTC holds steady.", source: "CryptoCompare (Mock)", published_on: Math.floor(Date.now() / 1000 - 3600), url: "#" },
+          { id: "f2", title: "Global Regulatory Shifts for Stablecoins", body: "New standard guidelines are being discussed by G7 finance ministers.", source: "kimpre News", published_on: Math.floor(Date.now() / 1000 - 7200), url: "#" },
+          { id: "f3", title: "Ethereum Layer 2 Adoption Spikes", body: "Transaction counts on key L2 networks reach all-time highs as fees drop.", source: "kimpre News", published_on: Math.floor(Date.now() / 1000 - 10800), url: "#" }
         ];
         res.json(mockNews);
       }
