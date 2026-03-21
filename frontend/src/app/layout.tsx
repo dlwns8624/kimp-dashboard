@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { Geist, Geist_Mono } from "next/font/google";
 import TopNavigation from "@/components/TopNavigation";
 import BottomNavigation from "@/components/BottomNavigation";
@@ -18,6 +19,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "kimpre - 실시간 김치 프리미엄 & 글로벌 코인 정보",
   description: "업비트, 빗썸, 바이낸스의 실시간 시세를 추적하고 코인별 김치 프리미엄과 롱/숏 비율, 청산 알림을 제공합니다.",
+  verification: {
+    google: "sYZoVyLmX3fTYrVRhBW1Vs93KKfL1IhU_q6sdU7wZ5Y",
+  },
+  other: {
+    "google-adsense-account": "ca-pub-9754221047620946",
+  },
 };
 
 export default function RootLayout({
@@ -28,6 +35,12 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-950 text-neutral-300 min-h-screen flex flex-col`}>
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9754221047620946"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
         <TopNavigation />
         <main className="flex-1 pb-16 md:pb-0">
           {children}
