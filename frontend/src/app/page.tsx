@@ -220,15 +220,6 @@ export default function Home() {
     setChatOpen(o => {
       if (!o) {
         setUnreadCount(0);
-        // 닉네임: localStorage 우선, 없으면 자동 생성 후 저장
-        const saved = localStorage.getItem("kimp_nickname");
-        if (saved) {
-          setNickname(saved);
-        } else {
-          const nick = generateNickname();
-          setNickname(nick);
-          localStorage.setItem("kimp_nickname", nick);
-        }
         // 열 때 맨 아래로 스크롤
         setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
       }
@@ -246,7 +237,13 @@ export default function Home() {
   // localStorage에서 닉네임 + 채팅 히스토리 복원 (마운트 시 즉시)
   useEffect(() => {
     const savedNick = localStorage.getItem("kimp_nickname");
-    if (savedNick) setNickname(savedNick);
+    if (savedNick) {
+      setNickname(savedNick);
+    } else {
+      const nick = generateNickname();
+      setNickname(nick);
+      localStorage.setItem("kimp_nickname", nick);
+    }
 
     const cached = loadChatFromStorage();
     if (cached.length > 0) {
