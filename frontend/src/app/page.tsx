@@ -156,21 +156,24 @@ export default function Home() {
                   return 1400;
                 })();
                 const krwAmount = Math.round(usdAmount * fxRate);
-                const krwStr = krwAmount >= 1e8
-                  ? (krwAmount / 1e8).toFixed(1) + "억원"
-                  : (krwAmount / 1e4).toFixed(0) + "만원";
-                const alertMsg: ChatMessage = {
-                  sender: "🔔 청산 알림",
-                  text: `${isLong ? "🔻 롱청산" : "🔺 숏청산"} ${sym} ₩${krwStr}`,
-                  time: l.time || Date.now(),
-                  isSystem: true,
-                };
-                setChatParams(prev => {
-                  const next = [...prev, alertMsg].slice(-200);
-                  saveChatToStorage(next);
-                  return next;
-                });
-                setChatOpen(open => { if (!open) setUnreadCount(n => n + 1); return open; });
+                // 500만원 이상일 때만 채팅창에 알림 추가
+                if (krwAmount >= 5000000) {
+                  const krwStr = krwAmount >= 1e8
+                    ? (krwAmount / 1e8).toFixed(1) + "억원"
+                    : (krwAmount / 1e4).toFixed(0) + "만원";
+                  const alertMsg: ChatMessage = {
+                    sender: "🔔 청산 알림",
+                    text: `${isLong ? "🔻 롱청산" : "🔺 숏청산"} ${sym} ₩${krwStr}`,
+                    time: l.time || Date.now(),
+                    isSystem: true,
+                  };
+                  setChatParams(prev => {
+                    const next = [...prev, alertMsg].slice(-200);
+                    saveChatToStorage(next);
+                    return next;
+                  });
+                  setChatOpen(open => { if (!open) setUnreadCount(n => n + 1); return open; });
+                }
               }
             }
           } catch { /* ignore */ }
