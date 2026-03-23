@@ -64,14 +64,14 @@ export default function Home() {
   // ── UI state ──
   const [sortKey, setSortKey]         = useState<SortKey>("marketCap");
   const [sortOrder, setSortOrder]     = useState<SortOrder>("desc");
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  const [expandedRow, setExpandedRow] = useState<string | null>("BTC"); // 진입 시 BTC 차트 기본 표시
   const [searchTerm, setSearchTerm]   = useState("");
   const [exchange, setExchange]       = useState<Exchange>("upbit");
   const [rightTab, setRightTab]       = useState<RightTab>("whale");
   const [showAllCoins, setShowAllCoins]   = useState(false);
   const [expandedMacro, setExpandedMacro] = useState<"nasdaq" | "gold" | "fx" | null>(null);
   // Chat popup
-  const [chatOpen, setChatOpen]         = useState(false);
+  const [chatOpen, setChatOpen]         = useState(true);  // 진입 시 채팅창 기본 오픈
   const [chatInput, setChatInput]       = useState("");
   const [unreadCount, setUnreadCount]   = useState(0);
   const chatBottomRef = useRef<HTMLDivElement>(null);
