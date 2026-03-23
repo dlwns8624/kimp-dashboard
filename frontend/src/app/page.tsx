@@ -79,6 +79,7 @@ export default function Home() {
   const [nicknameEditing, setNicknameEditing] = useState(false);
   const [nicknameInput, setNicknameInput]     = useState("");
   const nicknameInputRef = useRef<HTMLInputElement>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
   const [notiEnabled, setNotiEnabled]       = useState(false);
   const [notiTargetKimpre, setNotiTargetKimpre] = useState<number>(3);
   const lastNotified = useRef<Record<string, number>>({});
@@ -227,12 +228,22 @@ export default function Home() {
     });
   };
 
-  // 채팅창 열려있을 때 새 메시지 오면 자동 스크롤
+  // 채팅창 열려있을 때 새 메시지 오면 자동 스크롤 (위로 올려서 보는 중이 아닐 때만)
   useEffect(() => {
-    if (chatOpen) {
+    if (chatOpen && !showScrollBtn) {
       chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatParams, chatOpen]);
+
+  // 스크롤 이벤트 핸들러
+  const handleChatScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    setShowScrollBtn(scrollHeight - scrollTop - clientHeight > 40);
+  };
+
+  const scrollToBottom = () => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   // localStorage에서 닉네임 + 채팅 히스토리 복원 (마운트 시 즉시)
   useEffect(() => {
@@ -866,8 +877,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Messages — 20분 이내 메시지만 표시 */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {/* Messages — 12시간 이내 메시지만 표시 */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3" onScroll={handleChatScroll}>
             {(() => {
               const visible = chatParams.filter(m => Date.now() - m.time < MSG_TTL_MS);
               if (visible.length === 0) {
@@ -927,8 +938,20 @@ export default function Home() {
             <div ref={chatBottomRef} />
           </div>
 
+          {/* 스크롤 버튼 */}
+          {showScrollBtn && (
+            <div className="absolute bottom-[64px] left-0 w-full flex justify-center pointer-events-none">
+              <button
+                onClick={scrollToBottom}
+                className="pointer-events-auto bg-indigo-600/95 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 text-[11px] font-black px-4 py-2 rounded-full backdrop-blur-md transition-all flex items-center gap-1.5 animate-bounce"
+              >
+                <span>👇</span> <span>최신 메시지 보기</span>
+              </button>
+            </div>
+          )}
+
           {/* Input */}
-          <form onSubmit={sendChat} className="p-3 border-t border-neutral-800 bg-neutral-950/60 flex items-center gap-2 shrink-0">
+          <form onSubmit={sendChat} className="p-3 border-t border-neutral-800 bg-neutral-950/60 flex items-center gap-2 shrink-0 relative z-10">
             <input type="text" placeholder="메시지 입력..."
               className="flex-1 bg-neutral-800/80 text-xs text-white outline-none px-3 py-2 rounded-xl border border-neutral-700 focus:border-indigo-500/60 transition-all font-medium placeholder:text-neutral-600"
               value={chatInput} onChange={e => setChatInput(e.target.value)} />
