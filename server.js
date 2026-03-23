@@ -97,9 +97,9 @@ const state = {
   lastError: null
 };
 
-// 채팅 히스토리 (20분 TTL)
+// 채팅 히스토리 (12시간 TTL)
 const chatHistory = [];
-const CHAT_TTL_MS = 20 * 60 * 1000;
+const CHAT_TTL_MS = 12 * 60 * 60 * 1000;
 
 function pruneChatHistory() {
   const cutoff = Date.now() - CHAT_TTL_MS;
@@ -651,7 +651,7 @@ function createServer() {
           console.log(`[Backend] WebSocket connected from ${req.socket.remoteAddress}`);
           ws.send(JSON.stringify({ type: "INIT", state }));
 
-          // 신규 접속자에게 20분 이내 채팅 히스토리 전송
+          // 신규 접속자에게 12시간 이내 채팅 히스토리 전송
           pruneChatHistory();
           if (chatHistory.length > 0) {
             ws.send(JSON.stringify({ type: "CHAT_HISTORY", payload: chatHistory }));

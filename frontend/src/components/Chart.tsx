@@ -49,7 +49,7 @@ function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartPr
 
   // 높이만 반응형 (PC와 동일한 기능 유지)
   useEffect(() => {
-    const update = () => setChartHeight(window.innerWidth < 768 ? 320 : 450);
+    const update = () => setChartHeight(window.innerWidth < 768 ? 240 : 450);
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);

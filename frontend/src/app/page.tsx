@@ -16,7 +16,7 @@ type ChatMessage = { sender: string; text: string; time: number; isSystem?: bool
 // ─── Chat helpers ────────────────────────────────────────────────────────────
 const NICK_POOL = ["고래", "달팽", "별빛", "사자", "곰돌", "토끼", "여우", "청매", "폭풍", "번개", "파랑", "무지"];
 const generateNickname = () => NICK_POOL[Math.floor(Math.random() * NICK_POOL.length)];
-const MSG_TTL_MS = 20 * 60 * 1000; // 20분
+const MSG_TTL_MS = 12 * 60 * 60 * 1000; // 12시간
 type Liquidation = { symbol: string; side: "BUY" | "SELL"; price: number; qty: number; time: number };
 type SortKey     = "symbol" | "price" | "premium" | "volume" | "marketCap";
 type SortOrder   = "asc" | "desc";
@@ -111,10 +111,22 @@ export default function Home() {
                 setLiquidations(prev => [l, ...prev].slice(0, 60));
                 const sym = l.symbol.replace("USDT", "");
                 const isLong = l.side === "SELL";
-                const amount = (l.price * l.qty).toLocaleString("en-US", { maximumFractionDigits: 0 });
+                const usdAmount = l.price * l.qty;
+                // 원화 환산: market.coins에서 KRW 환율 추정 (fxRate 없으면 1400 기본값)
+                const fxRate = (() => {
+                  const btc = market.coins["BTC"];
+                  if (btc && btc.binanceUsdPrice > 0 && btc.krwPrice > 0) {
+                    return btc.krwPrice / btc.binanceUsdPrice;
+                  }
+                  return 1400;
+                })();
+                const krwAmount = Math.round(usdAmount * fxRate);
+                const krwStr = krwAmount >= 1e8
+                  ? (krwAmount / 1e8).toFixed(1) + "억원"
+                  : (krwAmount / 1e4).toFixed(0) + "만원";
                 const alertMsg: ChatMessage = {
                   sender: "🔔 청산 알림",
-                  text: `${isLong ? "🔻 롱청산" : "🔺 숏청산"} ${sym} $${amount}`,
+                  text: `${isLong ? "🔻 롱청산" : "🔺 숏청산"} ${sym} ₩${krwStr}`,
                   time: l.time || Date.now(),
                   isSystem: true,
                 };
@@ -166,9 +178,11 @@ export default function Home() {
     setChatOpen(o => {
       if (!o) {
         setUnreadCount(0);
-        // 닉네임 없으면 자동 생성
+        // 닉네임: localStorage 우선, 없으면 자동 생성 후 저장
         const saved = localStorage.getItem("kimp_nickname");
-        if (!saved) {
+        if (saved) {
+          setNickname(saved);
+        } else {
           const nick = generateNickname();
           setNickname(nick);
           localStorage.setItem("kimp_nickname", nick);
@@ -193,7 +207,7 @@ export default function Home() {
     if (saved) setNickname(saved);
   }, []);
 
-  // 20분 이상된 메시지 주기적으로 제거
+  // 12시간 이상된 메시지 주기적으로 제거
   useEffect(() => {
     const id = setInterval(() => {
       setChatParams(prev => prev.filter(m => Date.now() - m.time < MSG_TTL_MS));
@@ -577,8 +591,10 @@ export default function Home() {
                           {isExpanded && (
                             <tr>
                               <td colSpan={8} className="p-0 border-b border-neutral-800 bg-neutral-900/40">
-                                <div className="p-2 md:p-6">
-                                  <Chart symbol={coin.symbol} upbitSymbol={coin.upbitSymbol} />
+                                <div className="p-1 md:p-4">
+                                  <div className="h-[220px] sm:h-[300px] md:h-auto">
+                                    <Chart symbol={coin.symbol} upbitSymbol={coin.upbitSymbol} />
+                                  </div>
                                 </div>
                               </td>
                             </tr>
@@ -710,15 +726,35 @@ export default function Home() {
                               </td>
                               {/* 청산금액 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5 text-right">
-                                <p className={`text-[11px] md:text-sm font-black whitespace-nowrap ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
-                                  ${fmtNum(liq.price * liq.qty, 0)}
-                                </p>
+                                {(() => {
+                                  const _usdAmt = liq.price * liq.qty;
+                                  const _btcL = market.coins["BTC"];
+                                  const _fx = (_btcL && _btcL.binanceUsdPrice > 0 && _btcL.krwPrice > 0)
+                                    ? _btcL.krwPrice / _btcL.binanceUsdPrice : 1400;
+                                  const _krw = Math.round(_usdAmt * _fx);
+                                  const _ks = _krw >= 1e8
+                                    ? (_krw / 1e8).toFixed(1) + "억"
+                                    : (_krw / 1e4).toFixed(0) + "만";
+                                  return (
+                                    <p className={`text-[11px] md:text-sm font-black whitespace-nowrap ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
+                                      ₩{_ks}
+                                    </p>
+                                  );
+                                })()}
                               </td>
                               {/* 가격 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5 text-right hidden md:table-cell">
-                                <p className="text-[10px] md:text-xs text-neutral-400 font-mono font-bold">
-                                  ${fmtNum(liq.price, liq.price >= 100 ? 2 : liq.price >= 1 ? 4 : 6)}
-                                </p>
+                                {(() => {
+                                  const _btcP = market.coins["BTC"];
+                                  const _fxP = (_btcP && _btcP.binanceUsdPrice > 0 && _btcP.krwPrice > 0)
+                                    ? _btcP.krwPrice / _btcP.binanceUsdPrice : 1400;
+                                  const _kp = Math.round(liq.price * _fxP);
+                                  return (
+                                    <p className="text-[10px] md:text-xs text-neutral-400 font-mono font-bold">
+                                      ₩{fmtNum(_kp, 0)}
+                                    </p>
+                                  );
+                                })()}
                               </td>
                               {/* 시간 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5 text-right">
@@ -797,7 +833,7 @@ export default function Home() {
                   <div className="flex flex-col items-center justify-center h-full gap-2 text-neutral-700">
                     <span className="text-2xl">💬</span>
                     <p className="text-[10px] font-bold">시장 정황을 공유해보세요</p>
-                    <p className="text-[9px] text-neutral-700">최근 20분 이내 메시지만 표시됩니다</p>
+                    <p className="text-[9px] text-neutral-700">최근 12시간 이내 메시지만 표시됩니다</p>
                   </div>
                 );
               }
