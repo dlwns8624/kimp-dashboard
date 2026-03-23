@@ -126,16 +126,16 @@ function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartPr
     <div className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl relative">
       <div className="px-2.5 py-1.5 md:px-3 md:py-2.5 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/20">
         <div className="flex items-center gap-1.5 md:gap-2">
-          <div className="w-5 h-5 md:w-7 md:h-7 rounded-md md:rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-[9px] md:text-xs ring-1 ring-indigo-500/20">
+          <div className="w-5 h-5 md:w-7 md:h-7 rounded-md md:rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-xs md:text-xs ring-1 ring-indigo-500/20">
             {headerDisplay.charAt(0)}
           </div>
           <div>
-            <h3 className="text-white font-black text-xs md:text-sm leading-none mb-0.5">{headerDisplay}</h3>
-            <p className="text-[8px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest leading-none">{headerSub}</p>
+            <h3 className="text-white font-bold text-xs md:text-sm leading-none mb-0.5">{headerDisplay}</h3>
+            <p className="text-xs md:text-xs font-bold text-neutral-500 uppercase tracking-widest leading-none">{headerSub}</p>
           </div>
         </div>
         <div className="flex items-center gap-1.5 md:gap-2">
-          <div className="px-1.5 md:px-2 py-0.5 rounded-md bg-neutral-800 text-[8px] md:text-[9px] font-bold text-neutral-400 border border-neutral-700">LIVE</div>
+          <div className="px-1.5 md:px-2 py-0.5 rounded-md bg-neutral-800 text-xs md:text-xs font-bold text-neutral-400 border border-neutral-700">LIVE</div>
           <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse" />
         </div>
       </div>

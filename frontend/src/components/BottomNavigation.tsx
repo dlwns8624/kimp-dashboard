@@ -34,7 +34,7 @@ export default function BottomNavigation() {
                 strokeWidth={isActive ? 2.5 : 1.8}
                 className={isActive ? "drop-shadow-[0_0_6px_rgba(99,102,241,0.7)]" : ""}
               />
-              <span className={`text-[9px] font-bold leading-none tracking-wide ${isActive ? "text-indigo-400" : ""}`}>
+              <span className={`text-xs font-bold leading-none tracking-wide ${isActive ? "text-indigo-400" : ""}`}>
                 {label}
               </span>
               {isActive && (

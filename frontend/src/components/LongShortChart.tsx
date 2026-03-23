@@ -158,11 +158,11 @@ export default function LongShortChart({
       <div className="flex items-center gap-4 mb-2">
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-0.5 bg-emerald-500 rounded-full" />
-          <span className="text-[10px] text-neutral-500 font-bold">Long %</span>
+          <span className="text-xs text-neutral-500 font-bold">Long %</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-3 h-0.5 bg-rose-500 rounded-full" />
-          <span className="text-[10px] text-neutral-500 font-bold">Short %</span>
+          <span className="text-xs text-neutral-500 font-bold">Short %</span>
         </div>
       </div>
 

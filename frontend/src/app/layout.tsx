@@ -145,7 +145,8 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-950 text-neutral-300 min-h-screen flex flex-col`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-neutral-950 text-neutral-300 min-h-screen flex flex-col font-sans`}>
+        <link rel="stylesheet" as="style" crossOrigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
         <Script
           async
           src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9754221047620946"
@@ -160,15 +161,15 @@ export default function RootLayout({
         <footer className="w-full border-t border-neutral-800 px-3 md:px-8 pt-6 pb-24 md:pt-8 md:pb-8">
           <div className="max-w-[1600px] mx-auto space-y-3">
             {/* SEO용 키워드 텍스트 (자연스럽게 서비스 설명) */}
-            <p className="text-[10px] md:text-[11px] text-neutral-600 leading-relaxed">
+            <p className="text-xs md:text-sm text-neutral-600 leading-relaxed">
               김프리는 실시간 <strong className="text-neutral-500">김치프리미엄(김프가)</strong>을 업비트·빗썸·바이낸스 기준으로 비교 제공합니다.
               코인별 <strong className="text-neutral-500">롱숏비율</strong>, 고래 거래, 청산 감지, BTC 도미넌스, 공포탐욕지수를 한눈에 확인하세요.
             </p>
-            <p className="text-[10px] md:text-[11px] text-neutral-600 leading-relaxed">
+            <p className="text-xs md:text-sm text-neutral-600 leading-relaxed">
               사이트 내 모든 암호화폐 가격 및 투자 관련 정보에 대하여 어떠한 책임을 부담하지 않습니다.
               디지털 자산 투자는 전적으로 스스로의 책임이므로 이에 유의하시기 바랍니다.
             </p>
-            <div className="flex items-center gap-2 text-[10px] md:text-[11px] text-neutral-500">
+            <div className="flex items-center gap-2 text-xs md:text-sm text-neutral-500">
               <Link href="/terms" className="hover:text-neutral-300 transition-colors font-bold">
                 서비스 이용약관
               </Link>

@@ -42,8 +42,8 @@ export default function CalendarPage() {
     <div className="min-h-screen bg-neutral-950 pb-20 md:pb-8 flex flex-col">
       <div className="max-w-[1400px] mx-auto w-full px-3 md:px-8 pt-4 md:pt-8 pb-2">
         <div className="flex items-center gap-2 mb-0.5">
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">글로벌 경제 캘린더</h1>
-          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black border border-emerald-500/20 animate-pulse">LIVE</span>
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">글로벌 경제 캘린더</h1>
+          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 animate-pulse">LIVE</span>
         </div>
         <p className="text-neutral-500 text-xs">암호화폐 변동성에 영향을 미치는 주요 거시경제 지표 발표 일정 · TradingView</p>
       </div>

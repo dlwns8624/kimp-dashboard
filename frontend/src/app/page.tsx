@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef, useCallback, useMemo } from "react"
 import dynamic from "next/dynamic";
 import { WS_BASE_URL } from "@/lib/constants";
 import { useMarketData, type CoinData } from "@/hooks/useMarketData";
+import { ChevronDown } from "lucide-react";
 
 const Chart                    = dynamic(() => import("@/components/Chart"),                  { ssr: false });
 const WhaleWatch               = dynamic(() => import("@/components/WhaleWatch"),             { ssr: false });
@@ -278,11 +279,11 @@ export default function Home() {
 
   const getPremiumBadge = (prem: number) => {
     const label = `${prem > 0 ? "+" : ""}${prem.toFixed(2)}%`;
-    if (prem > 3)  return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-rose-500/15 text-rose-400 border border-rose-500/20">{label}</span>;
-    if (prem > 0)  return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-orange-500/10 text-orange-400 border border-orange-500/20">{label}</span>;
-    if (prem < -1) return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-blue-500/15 text-blue-400 border border-blue-500/20">{label}</span>;
-    if (prem < 0)  return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-sky-500/10 text-sky-400 border border-sky-500/20">{label}</span>;
-    return <span className="inline-block px-2 py-0.5 rounded text-[11px] font-black bg-neutral-800 text-neutral-500 border border-neutral-700">{label}</span>;
+    if (prem > 3)  return <span className="inline-block px-2 py-0.5 rounded text-sm font-bold bg-rose-500/15 text-rose-400 border border-rose-500/20">{label}</span>;
+    if (prem > 0)  return <span className="inline-block px-2 py-0.5 rounded text-sm font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20">{label}</span>;
+    if (prem < -1) return <span className="inline-block px-2 py-0.5 rounded text-sm font-bold bg-blue-500/15 text-blue-400 border border-blue-500/20">{label}</span>;
+    if (prem < 0)  return <span className="inline-block px-2 py-0.5 rounded text-sm font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20">{label}</span>;
+    return <span className="inline-block px-2 py-0.5 rounded text-sm font-bold bg-neutral-800 text-neutral-500 border border-neutral-700">{label}</span>;
   };
 
   // ── Sorting ──────────────────────────────────────────────────────────────
@@ -327,10 +328,10 @@ export default function Home() {
           <div className="lg:col-span-3 order-2 lg:order-1">
             <div className="bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-2xl p-3 md:p-5 shadow-xl h-full">
               <div className="flex justify-between items-center mb-3 md:mb-5 border-b border-neutral-800 pb-2 md:pb-3">
-                <h2 className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-neutral-500">시장 지표</h2>
+                <h2 className="text-xs md:text-xs font-bold uppercase tracking-[0.2em] text-neutral-500">시장 지표</h2>
                 <div className="flex items-center gap-1.5">
                   <div className={`w-2 h-2 rounded-full animate-pulse ${market.isLive ? "bg-emerald-500" : "bg-amber-500"}`} />
-                  <span className="text-[9px] font-bold text-neutral-600">
+                  <span className="text-xs font-bold text-neutral-600">
                     {market.isLive ? "LIVE" : "로딩 중..."}
                   </span>
                 </div>
@@ -341,21 +342,21 @@ export default function Home() {
                 <div className="grid grid-cols-2 md:block gap-2">
                 {/* 글로벌 시가총액 */}
                 <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
-                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">🌐 글로벌 시총</p>
-                  <p className="text-base md:text-xl font-black text-white tracking-tight">
+                  <p className="text-xs md:text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">글로벌 시총</p>
+                  <p className="text-base md:text-xl font-bold text-white tracking-tight">
                     ${market.globalMetrics ? (market.globalMetrics.totalMarketCap / 1e12).toFixed(2) + "T" : "-"}
                   </p>
-                  <p className="text-[9px] text-neutral-500 mt-0.5 md:mt-1">
+                  <p className="text-xs text-neutral-500 mt-0.5 md:mt-1">
                     Vol <span className="text-neutral-400 font-bold">${fmtNum((market.globalMetrics?.totalVolume ?? 0) / 1e9, 0)}B</span>
                   </p>
                 </div>
 
                 {/* BTC 도미넌스 */}
                 <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
-                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">₿ BTC 도미</p>
+                  <p className="text-xs md:text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">₿ BTC 도미</p>
                   <div className="flex items-baseline justify-between mb-1.5 md:mb-2">
-                    <p className="text-base md:text-xl font-black text-orange-400">{fmtNum(market.globalMetrics?.btcDominance, 2)}%</p>
-                    <p className="text-[9px] text-neutral-600">ETH {fmtNum(market.globalMetrics?.ethDominance, 1)}%</p>
+                    <p className="text-base md:text-xl font-bold text-orange-400">{fmtNum(market.globalMetrics?.btcDominance, 2)}%</p>
+                    <p className="text-xs text-neutral-600">ETH {fmtNum(market.globalMetrics?.ethDominance, 1)}%</p>
                   </div>
                   <div className="w-full bg-neutral-800 rounded-full h-1.5 overflow-hidden">
                     <div className="h-full rounded-full transition-all duration-1000"
@@ -366,7 +367,7 @@ export default function Home() {
 
                 {/* 공포·탐욕 */}
                 <div className="bg-neutral-950/50 rounded-lg md:rounded-xl p-2 md:p-3 border border-neutral-800/50">
-                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">😨 공포·탐욕</p>
+                  <p className="text-xs md:text-xs font-bold text-neutral-600 uppercase tracking-wider mb-1 md:mb-2">공포·탐욕</p>
                   {market.fearAndGreed ? (() => {
                     const val   = Number(market.fearAndGreed!.value);
                     const color = val >= 75 ? "#10b981" : val >= 55 ? "#84cc16" : val >= 45 ? "#eab308" : val >= 25 ? "#f97316" : "#ef4444";
@@ -379,11 +380,11 @@ export default function Home() {
                             <circle cx="18" cy="18" r="15.9" fill="none" stroke={color} strokeWidth="3"
                               strokeDasharray={`${val} ${100 - val}`} strokeLinecap="round" />
                           </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-xs md:text-base font-black" style={{ color }}>{val}</span>
+                          <span className="absolute inset-0 flex items-center justify-center text-xs md:text-base font-bold" style={{ color }}>{val}</span>
                         </div>
                         <div>
-                          <p className="text-xs md:text-sm font-black text-white">{label}</p>
-                          <p className="text-[8px] md:text-[9px] text-neutral-600 mt-0.5">0=공포 · 100=탐욕</p>
+                          <p className="text-xs md:text-sm font-bold text-white">{label}</p>
+                          <p className="text-xs md:text-xs text-neutral-600 mt-0.5">0=공포 · 100=탐욕</p>
                         </div>
                       </div>
                     );
@@ -393,20 +394,20 @@ export default function Home() {
                 {/* 김프 알림 */}
                 <div className="pt-1 border-t border-neutral-800">
                   <div className="flex justify-between items-center mb-2 md:mb-3">
-                    <p className="text-[9px] md:text-[10px] font-black text-neutral-500 uppercase tracking-widest">🔔 김프 알림</p>
+                    <p className="text-xs md:text-xs font-bold text-neutral-500 uppercase tracking-widest">김프 알림</p>
                     <button onClick={setupNotifications}
                       className={`relative inline-flex h-5 w-10 rounded-full transition-all duration-300 ${notiEnabled ? "bg-indigo-500" : "bg-neutral-800 border border-neutral-700"}`}>
                       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform mt-[3px] ml-[3px] shadow-sm ${notiEnabled ? "translate-x-5" : "translate-x-0"}`} />
                     </button>
                   </div>
                   <div className="flex items-center justify-between bg-neutral-950/50 p-2.5 rounded-xl border border-neutral-800">
-                    <span className="text-[11px] font-bold text-neutral-400 uppercase">기준 김프</span>
+                    <span className="text-sm font-bold text-neutral-400 uppercase">기준 김프</span>
                     <div className="flex items-center gap-1.5">
                       <input type="number" value={notiTargetKimpre}
                         onChange={e => setNotiTargetKimpre(Number(e.target.value))}
                         className="w-12 bg-transparent text-white font-bold text-right outline-none focus:text-indigo-400"
                         disabled={!notiEnabled} />
-                      <span className="text-[11px] font-bold text-neutral-600">%</span>
+                      <span className="text-sm font-bold text-neutral-600">%</span>
                     </div>
                   </div>
                 </div>
@@ -448,11 +449,11 @@ export default function Home() {
                       <div className="bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-2xl overflow-hidden shadow-xl">
                         <div className="flex items-center justify-between px-3 py-2 md:px-4 md:py-2.5 border-b border-neutral-800 bg-neutral-950/40">
                           <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-black uppercase tracking-widest ${w.tagColor}`}>{w.label}</span>
-                            <span className="text-[9px] text-neutral-600 font-mono">{w.symbol}</span>
+                            <span className={`text-xs font-bold uppercase tracking-widest ${w.tagColor}`}>{w.label}</span>
+                            <span className="text-xs text-neutral-600 font-mono">{w.symbol}</span>
                           </div>
                           <button onClick={() => setExpandedMacro(null)}
-                            className="text-neutral-600 hover:text-white text-xs font-black px-2 py-1 rounded-lg hover:bg-neutral-800 transition-all">✕</button>
+                            className="text-neutral-600 hover:text-white text-xs font-bold px-2 py-1 rounded-lg hover:bg-neutral-800 transition-all">✕</button>
                         </div>
                         <Chart
                           symbol={w.symbol}
@@ -475,18 +476,18 @@ export default function Home() {
                 <div className="flex items-center gap-3">
                   <div className="flex bg-neutral-950 p-0.5 rounded-xl border border-neutral-800">
                     <button onClick={() => setExchange("upbit")}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${exchange === "upbit" ? "bg-indigo-600 text-white shadow" : "text-neutral-500"}`}>
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${exchange === "upbit" ? "bg-indigo-600 text-white shadow" : "text-neutral-500"}`}>
                       업비트
                     </button>
                     <button onClick={() => setExchange("bithumb")}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all ${exchange === "bithumb" ? "bg-orange-500 text-white shadow" : "text-neutral-500"}`}>
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${exchange === "bithumb" ? "bg-orange-500 text-white shadow" : "text-neutral-500"}`}>
                       빗썸
                     </button>
                   </div>
                   {/* 데이터 출처 표시 */}
-                  <span className="hidden md:flex items-center gap-1.5 text-[10px] font-bold text-neutral-600">
+                  <span className="hidden md:flex items-center gap-1.5 text-xs font-bold text-neutral-600">
                     김프 기준:
-                    <span className="text-yellow-500 font-black">Binance</span>
+                    <span className="text-yellow-500 font-bold">Binance</span>
                     <span className="text-neutral-700">(트레이딩뷰)</span>
                   </span>
                 </div>
@@ -503,32 +504,32 @@ export default function Home() {
                 <table className="w-full text-left border-collapse table-fixed md:table-auto">
                   <thead>
                     <tr className="bg-neutral-950/40">
-                      <th className="w-[30%] md:w-auto px-2 md:px-3 py-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 cursor-pointer hover:text-neutral-300"
+                      <th className="w-[30%] md:w-auto px-2 md:px-3 py-2 text-xs md:text-xs font-bold uppercase tracking-widest text-neutral-500 border-b border-neutral-800 cursor-pointer hover:text-neutral-300"
                         onClick={() => handleSort("symbol")}>
                         코인 {sortKey === "symbol" && <span style={{ color: exColor }}>{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
-                      <th className="hidden md:table-cell px-3 py-2 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
+                      <th className="hidden md:table-cell px-3 py-2 text-xs font-bold uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
                         onClick={() => handleSort("marketCap")}>
                         시가총액 {sortKey === "marketCap" && <span className="text-indigo-400">{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
                       {/* 바이낸스 기준가: 데스크탑 lg+ 에서만 표시 */}
-                      <th className="hidden lg:table-cell px-3 py-2 text-[9px] font-black uppercase tracking-widest text-yellow-600 border-b border-neutral-800 text-right">
+                      <th className="hidden lg:table-cell px-3 py-2 text-xs font-bold uppercase tracking-widest text-yellow-600 border-b border-neutral-800 text-right">
                         바이낸스 기준가
                       </th>
-                      <th className="w-[35%] md:w-auto px-2 md:px-3 py-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
+                      <th className="w-[35%] md:w-auto px-2 md:px-3 py-2 text-xs md:text-xs font-bold uppercase tracking-widest border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
                         style={{ color: isUpbit ? "#818cf8" : "#fb923c" }}
                         onClick={() => handleSort("price")}>
                         시세 {sortKey === "price" && <span>{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
-                      <th className="w-[20%] md:w-auto px-2 md:px-3 py-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
+                      <th className="w-[20%] md:w-auto px-2 md:px-3 py-2 text-xs md:text-xs font-bold uppercase tracking-widest border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
                         style={{ color: isUpbit ? "#818cf8" : "#fb923c" }}
                         onClick={() => handleSort("premium")}>
                         김프 {sortKey === "premium" && <span>{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
-                      <th className="w-[15%] md:w-auto px-1 md:px-3 py-2 text-[8px] md:text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right">
+                      <th className="w-[15%] md:w-auto px-1 md:px-3 py-2 text-xs md:text-xs font-bold uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right">
                         등락
                       </th>
-                      <th className="hidden md:table-cell px-3 py-2 text-[9px] font-black uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
+                      <th className="hidden md:table-cell px-3 py-2 text-xs font-bold uppercase tracking-widest text-neutral-500 border-b border-neutral-800 text-right cursor-pointer hover:text-neutral-300"
                         onClick={() => handleSort("volume")}>
                         거래량 {sortKey === "volume" && <span className="text-indigo-400">{sortOrder === "asc" ? "↑" : "↓"}</span>}
                       </th>
@@ -561,20 +562,20 @@ export default function Home() {
                             {/* 코인 */}
                             <td className="px-2 md:px-3 py-2 md:py-2.5">
                               <div className="flex items-center gap-1.5 md:gap-2">
-                                <div className="w-6 h-6 md:w-7 md:h-7 rounded-md md:rounded-lg border flex items-center justify-center font-black text-[9px] md:text-[10px] shrink-0"
+                                <div className="w-6 h-6 md:w-7 md:h-7 rounded-md md:rounded-lg border flex items-center justify-center font-bold text-xs md:text-xs shrink-0"
                                   style={{ borderColor: exBorder, color: exColor, backgroundColor: exBg }}>
                                   {coin.symbol.charAt(0)}
                                 </div>
                                 <div className="min-w-0">
-                                  <span className="font-black text-white text-[10px] md:text-xs block leading-none truncate">{coin.symbol}</span>
-                                  <span className="text-[7px] md:text-[8px] font-bold text-neutral-700">/KRW</span>
+                                  <span className="font-bold text-white text-xs md:text-xs block leading-none truncate">{coin.symbol}</span>
+                                  <span className="text-[7px] md:text-xs font-bold text-neutral-700">/KRW</span>
                                 </div>
                               </div>
                             </td>
 
                             {/* 시가총액 (desktop only) */}
                             <td className="hidden md:table-cell px-3 py-2.5 text-right">
-                              <p className="font-black text-neutral-400 text-xs">
+                              <p className="font-bold text-neutral-400 text-xs">
                                 {!coin.marketCap || isNaN(coin.marketCap) ? "-"
                                   : coin.marketCap > 1e12 ? "$" + (coin.marketCap / 1e12).toFixed(1) + "T"
                                   : "$" + (coin.marketCap / 1e9).toFixed(1) + "B"}
@@ -583,8 +584,8 @@ export default function Home() {
 
                             {/* 바이낸스 기준가 (lg+ only) */}
                             <td className="hidden lg:table-cell px-3 py-2.5 text-right">
-                              <p className="text-xs font-black text-yellow-600/80">{fmtKrw(coin.binanceKrwEquiv)}</p>
-                              <p className="text-[9px] text-neutral-700 font-mono mt-0.5">
+                              <p className="text-xs font-bold text-yellow-600/80">{fmtKrw(coin.binanceKrwEquiv)}</p>
+                              <p className="text-xs text-neutral-700 font-mono mt-0.5">
                                 ${coin.binanceUsdPrice.toLocaleString("en-US", { maximumFractionDigits: coin.binanceUsdPrice >= 1 ? 2 : 6 })}
                               </p>
                             </td>
@@ -593,10 +594,10 @@ export default function Home() {
                             <td className="px-2 md:px-3 py-2 md:py-2.5 text-right">
                               {ok ? (
                                 <>
-                                  <p className="font-black text-white text-xs md:text-sm leading-none">{fmtKrw(price)}</p>
+                                  <p className="font-bold text-white text-xs md:text-sm leading-none">{fmtKrw(price)}</p>
                                   {/* 모바일: 바이낸스 기준가 작은 글씨로 표시 */}
                                   {coin.binanceUsdPrice > 0 && (
-                                    <p className="md:hidden text-[8px] font-mono text-yellow-600/70 mt-0.5 leading-none">
+                                    <p className="md:hidden text-xs font-mono text-yellow-600/70 mt-0.5 leading-none">
                                       ${coin.binanceUsdPrice >= 1
                                         ? coin.binanceUsdPrice.toLocaleString("en-US", { maximumFractionDigits: 2 })
                                         : coin.binanceUsdPrice.toLocaleString("en-US", { maximumFractionDigits: 6 })}
@@ -604,14 +605,14 @@ export default function Home() {
                                   )}
                                 </>
                               ) : (
-                                <span className="text-[9px] text-neutral-700 font-bold">미상장</span>
+                                <span className="text-xs text-neutral-700 font-bold">미상장</span>
                               )}
                             </td>
 
                             {/* 김프 */}
                             <td className="px-1 md:px-3 py-2 md:py-2.5 text-right">
                               {ok && premium != null ? (
-                                <span className={`inline-block px-1 md:px-2 py-0.5 rounded text-[9px] md:text-[11px] font-black ${
+                                <span className={`inline-block px-1 md:px-2 py-0.5 rounded text-xs md:text-sm font-bold ${
                                   premium > 3  ? "bg-rose-500/15 text-rose-400 border border-rose-500/20" :
                                   premium > 0  ? "bg-orange-500/10 text-orange-400 border border-orange-500/20" :
                                   premium < -1 ? "bg-blue-500/15 text-blue-400 border border-blue-500/20" :
@@ -625,7 +626,7 @@ export default function Home() {
 
                             {/* 등락률 */}
                             <td className="px-1 md:px-3 py-2 md:py-2.5 text-right">
-                              <span className={`text-[10px] md:text-sm font-black ${changeRate > 0 ? "text-rose-500" : changeRate < 0 ? "text-blue-500" : "text-neutral-500"}`}>
+                              <span className={`text-xs md:text-sm font-bold ${changeRate > 0 ? "text-rose-500" : changeRate < 0 ? "text-blue-500" : "text-neutral-500"}`}>
                                 {changeRate > 0 ? "▲" : changeRate < 0 ? "▼" : ""}
                                 {Math.abs(changeRate * 100).toFixed(1)}%
                               </span>
@@ -633,10 +634,10 @@ export default function Home() {
 
                             {/* 거래량 (desktop only) */}
                             <td className="hidden md:table-cell px-3 py-2.5 text-right">
-                              <p className="font-black text-neutral-400 text-xs">
+                              <p className="font-bold text-neutral-400 text-xs">
                                 {coin.upbitVolumeKrw > 0 ? fmtNum(coin.upbitVolumeKrw / 1e8, 0) + "억" : "-"}
                               </p>
-                              <p className="text-[8px] font-bold text-neutral-700 mt-0.5">
+                              <p className="text-xs font-bold text-neutral-700 mt-0.5">
                                 BIN ${fmtNum(coin.binanceVolumeUsdt / 1e6, 0)}M
                               </p>
                             </td>
@@ -664,7 +665,7 @@ export default function Home() {
                 <div className="border-t border-neutral-800 bg-neutral-950/20">
                   <button
                     onClick={() => setShowAllCoins(s => !s)}
-                    className="w-full py-3 flex items-center justify-center gap-2 text-xs font-black text-neutral-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all group"
+                    className="w-full py-3 flex items-center justify-center gap-2 text-xs font-bold text-neutral-500 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all group"
                   >
                     {showAllCoins ? (
                       <>
@@ -675,7 +676,7 @@ export default function Home() {
                       <>
                         <span className="text-base leading-none group-hover:scale-110 transition-transform">▼</span>
                         <span>전체 {sortedCoins.length}개 코인 더 보기</span>
-                        <span className="bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded text-[9px] font-black">
+                        <span className="bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded text-xs font-bold">
                           +{sortedCoins.length - 15}
                         </span>
                       </>
@@ -686,11 +687,11 @@ export default function Home() {
 
               {/* Footer */}
               <div className="px-4 py-2 border-t border-neutral-800 bg-neutral-950/30 flex justify-between items-center">
-                <p className="text-[10px] text-neutral-600 font-bold">
+                <p className="text-xs text-neutral-600 font-bold">
                   {showAllCoins ? sortedCoins.length : Math.min(15, sortedCoins.length)}개 표시 / 전체 {sortedCoins.length}개
                 </p>
                 {market.updatedAt && (
-                  <p className="text-[10px] text-neutral-700">{new Date(market.updatedAt).toLocaleTimeString("ko-KR")}</p>
+                  <p className="text-xs text-neutral-700">{new Date(market.updatedAt).toLocaleTimeString("ko-KR")}</p>
                 )}
               </div>
             </div>
@@ -702,15 +703,15 @@ export default function Home() {
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl shadow-2xl flex flex-col h-[520px] overflow-hidden">
             <div className="flex border-b border-neutral-800 bg-neutral-900/60 shrink-0">
               <button onClick={() => setRightTab("whale")}
-                className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-black uppercase tracking-widest transition-all border-b-2 ${rightTab === "whale" ? "text-indigo-400 border-indigo-500 bg-indigo-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
-                🐋 고래 거래
+                className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${rightTab === "whale" ? "text-indigo-400 border-indigo-500 bg-indigo-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
+                고래 거래
               </button>
               <button onClick={() => setRightTab("liquidation")}
-                className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-black uppercase tracking-widest transition-all border-b-2 ${rightTab === "liquidation" ? "text-rose-400 border-rose-500 bg-rose-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
-                🔥 청산 감지
+                className={`flex items-center gap-2 px-4 py-3 text-xs md:text-sm font-bold uppercase tracking-widest transition-all border-b-2 ${rightTab === "liquidation" ? "text-rose-400 border-rose-500 bg-rose-500/5" : "text-neutral-500 border-transparent hover:text-neutral-300"}`}>
+                청산 감지
               </button>
               <div className="ml-auto flex items-center px-4">
-                <span className="text-[9px] md:text-[10px] font-bold text-neutral-600 font-mono">Real-time · Binance</span>
+                <span className="text-xs md:text-xs font-bold text-neutral-600 font-mono">Real-time · Binance</span>
               </div>
             </div>
 
@@ -722,7 +723,7 @@ export default function Home() {
                   {liquidations.length === 0 ? (
                     <div className="text-center py-20 flex flex-col items-center gap-3">
                       <div className="w-8 h-8 border-2 border-neutral-800 border-t-rose-500/50 rounded-full animate-spin" />
-                      <p className="text-sm md:text-base font-black text-neutral-600 uppercase tracking-widest">
+                      <p className="text-sm md:text-base font-bold text-neutral-600 uppercase tracking-widest">
                         BTC · ETH · SOL · XRP · BNB 청산 대기 중...
                       </p>
                     </div>
@@ -730,11 +731,11 @@ export default function Home() {
                     <table className="w-full border-collapse">
                       <thead className="sticky top-0 z-10 bg-neutral-900/95 backdrop-blur-sm">
                         <tr className="border-b border-neutral-800">
-                          <th className="px-2 md:px-4 py-2 text-left text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider">코인</th>
-                          <th className="px-2 md:px-4 py-2 text-left text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider">유형</th>
-                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider">청산금액</th>
-                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider hidden md:table-cell">가격</th>
-                          <th className="px-2 md:px-4 py-2 text-right text-[9px] md:text-xs font-black text-neutral-500 uppercase tracking-wider">시간</th>
+                          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-xs font-bold text-neutral-500 uppercase tracking-wider">코인</th>
+                          <th className="px-2 md:px-4 py-2 text-left text-xs md:text-xs font-bold text-neutral-500 uppercase tracking-wider">유형</th>
+                          <th className="px-2 md:px-4 py-2 text-right text-xs md:text-xs font-bold text-neutral-500 uppercase tracking-wider">청산금액</th>
+                          <th className="px-2 md:px-4 py-2 text-right text-xs md:text-xs font-bold text-neutral-500 uppercase tracking-wider hidden md:table-cell">가격</th>
+                          <th className="px-2 md:px-4 py-2 text-right text-xs md:text-xs font-bold text-neutral-500 uppercase tracking-wider">시간</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -758,20 +759,20 @@ export default function Home() {
                               <td className="px-2 md:px-4 py-2 md:py-2.5">
                                 <div className="flex items-center gap-1.5 md:gap-2.5">
                                   <div
-                                    className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center font-black text-[11px] md:text-sm shrink-0"
+                                    className="w-7 h-7 md:w-9 md:h-9 rounded-lg flex items-center justify-center font-bold text-sm md:text-sm shrink-0"
                                     style={{ background: coinColor.bg, color: coinColor.text, border: `1px solid ${coinColor.text}30` }}
                                   >
                                     {sym.charAt(0)}
                                   </div>
                                   <div>
-                                    <p className="text-[11px] md:text-sm font-black text-white leading-none">{sym}</p>
-                                    <p className="text-[8px] md:text-[10px] text-neutral-600 font-mono mt-0.5 hidden sm:block">PERP</p>
+                                    <p className="text-sm md:text-sm font-bold text-white leading-none">{sym}</p>
+                                    <p className="text-xs md:text-xs text-neutral-600 font-mono mt-0.5 hidden sm:block">PERP</p>
                                   </div>
                                 </div>
                               </td>
                               {/* 유형 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5">
-                                <span className={`inline-flex items-center gap-1 px-1.5 md:px-2.5 py-1 rounded-md md:rounded-lg text-[9px] md:text-xs font-black whitespace-nowrap ${
+                                <span className={`inline-flex items-center gap-1 px-1.5 md:px-2.5 py-1 rounded-md md:rounded-lg text-xs md:text-xs font-bold whitespace-nowrap ${
                                   isLong ? "bg-rose-500/15 text-rose-400 border border-rose-500/20" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/20"
                                 }`}>
                                   {isLong ? "🔻롱청산" : "🔺숏청산"}
@@ -789,7 +790,7 @@ export default function Home() {
                                     ? (_krw / 1e8).toFixed(1) + "억"
                                     : (_krw / 1e4).toFixed(0) + "만";
                                   return (
-                                    <p className={`text-[11px] md:text-sm font-black whitespace-nowrap ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
+                                    <p className={`text-sm md:text-sm font-bold whitespace-nowrap ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
                                       ₩{_ks}
                                     </p>
                                   );
@@ -803,7 +804,7 @@ export default function Home() {
                                     ? _btcP.krwPrice / _btcP.binanceUsdPrice : 1400;
                                   const _kp = Math.round(liq.price * _fxP);
                                   return (
-                                    <p className="text-[10px] md:text-xs text-neutral-400 font-mono font-bold">
+                                    <p className="text-xs md:text-xs text-neutral-400 font-mono font-bold">
                                       ₩{fmtNum(_kp, 0)}
                                     </p>
                                   );
@@ -811,7 +812,7 @@ export default function Home() {
                               </td>
                               {/* 시간 */}
                               <td className="px-2 md:px-4 py-2 md:py-2.5 text-right">
-                                <p className="text-[9px] md:text-xs text-neutral-500 font-mono whitespace-nowrap">
+                                <p className="text-xs md:text-xs text-neutral-500 font-mono whitespace-nowrap">
                                   {new Date(liq.time).toLocaleTimeString("ko-KR", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                                 </p>
                               </td>
@@ -837,19 +838,19 @@ export default function Home() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className={`w-2 h-2 rounded-full ${wsConnected ? "bg-emerald-500 animate-pulse" : "bg-neutral-600"}`} />
-                <span className="text-xs font-black uppercase tracking-widest text-neutral-100">kimpre Chat</span>
-                <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${wsConnected ? "bg-indigo-500/20 text-indigo-400" : "bg-neutral-800 text-neutral-500"}`}>
+                <span className="text-xs font-bold uppercase tracking-widest text-neutral-100">kimpre Chat</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${wsConnected ? "bg-indigo-500/20 text-indigo-400" : "bg-neutral-800 text-neutral-500"}`}>
                   {wsConnected ? "LIVE" : "재연결 중..."}
                 </span>
               </div>
               <button onClick={toggleChat}
-                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all text-xs font-black">
+                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-neutral-800 text-neutral-500 hover:text-white transition-all text-xs font-bold">
                 ✕
               </button>
             </div>
             {/* Nickname row */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] text-neutral-600 font-bold uppercase tracking-wider shrink-0">닉네임</span>
+              <span className="text-xs text-neutral-600 font-bold uppercase tracking-wider shrink-0">닉네임</span>
               {nicknameEditing ? (
                 <form onSubmit={saveNickname} className="flex items-center gap-1.5 flex-1">
                   <input
@@ -857,21 +858,21 @@ export default function Home() {
                     type="text"
                     value={nicknameInput}
                     onChange={e => setNicknameInput(e.target.value.slice(0, 8))}
-                    className="flex-1 bg-neutral-800 text-white text-[11px] font-bold px-2 py-1 rounded-lg border border-indigo-500/60 outline-none"
+                    className="flex-1 bg-neutral-800 text-white text-sm font-bold px-2 py-1 rounded-lg border border-indigo-500/60 outline-none"
                     maxLength={8}
                     placeholder="최대 8자"
                     autoFocus
                   />
-                  <button type="submit" className="text-[10px] text-indigo-400 font-black px-2 py-1 rounded-lg hover:bg-indigo-500/10 transition-all shrink-0">저장</button>
-                  <button type="button" onClick={() => setNicknameEditing(false)} className="text-[10px] text-neutral-500 font-bold px-1.5 py-1 rounded-lg hover:bg-neutral-800 transition-all shrink-0">취소</button>
+                  <button type="submit" className="text-xs text-indigo-400 font-bold px-2 py-1 rounded-lg hover:bg-indigo-500/10 transition-all shrink-0">저장</button>
+                  <button type="button" onClick={() => setNicknameEditing(false)} className="text-xs text-neutral-500 font-bold px-1.5 py-1 rounded-lg hover:bg-neutral-800 transition-all shrink-0">취소</button>
                 </form>
               ) : (
                 <button
                   onClick={() => { setNicknameInput(nickname); setNicknameEditing(true); setTimeout(() => nicknameInputRef.current?.focus(), 30); }}
                   className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg hover:bg-neutral-800 transition-all group"
                 >
-                  <span className="text-[11px] font-black text-indigo-300">{nickname || "닉네임 없음"}</span>
-                  <span className="text-[10px] text-neutral-600 group-hover:text-neutral-400 transition-colors">✏️</span>
+                  <span className="text-sm font-bold text-indigo-300">{nickname || "닉네임 없음"}</span>
+                  <span className="text-xs text-neutral-600 group-hover:text-neutral-400 transition-colors">✏️</span>
                 </button>
               )}
             </div>
@@ -885,8 +886,8 @@ export default function Home() {
                 return (
                   <div className="flex flex-col items-center justify-center h-full gap-2 text-neutral-700">
                     <span className="text-2xl">💬</span>
-                    <p className="text-[10px] font-bold">시장 정황을 공유해보세요</p>
-                    <p className="text-[9px] text-neutral-700">최근 12시간 이내 메시지만 표시됩니다</p>
+                    <p className="text-xs font-bold">시장 정황을 공유해보세요</p>
+                    <p className="text-xs text-neutral-700">최근 12시간 이내 메시지만 표시됩니다</p>
                   </div>
                 );
               }
@@ -902,10 +903,10 @@ export default function Home() {
                     }`}>
                       <span className="text-sm shrink-0">{isLong ? "🔻" : "🔺"}</span>
                       <div className="min-w-0 flex-1">
-                        <p className={`text-[10px] font-black leading-none mb-0.5 ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
+                        <p className={`text-xs font-bold leading-none mb-0.5 ${isLong ? "text-rose-400" : "text-emerald-400"}`}>
                           {msg.text.replace("🔻 ", "").replace("🔺 ", "")}
                         </p>
-                        <p className="text-[8px] text-neutral-600 font-mono">
+                        <p className="text-xs text-neutral-600 font-mono">
                           {new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
                         </p>
                       </div>
@@ -915,14 +916,14 @@ export default function Home() {
                 const isMe = msg.sender === nickname;
                 return (
                   <div key={i} className={`flex items-start gap-2.5 group ${isMe ? "flex-row-reverse" : ""}`}>
-                    <div className={`w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center text-[9px] font-black transition-all
+                    <div className={`w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold transition-all
                       ${isMe ? "bg-indigo-600/30 border border-indigo-500/40 text-indigo-300" : "bg-neutral-800 border border-neutral-700 text-neutral-500 group-hover:border-indigo-500/30"}`}>
                       {msg.sender.charAt(0)}
                     </div>
                     <div className={`min-w-0 max-w-[75%] ${isMe ? "items-end" : "items-start"} flex flex-col`}>
                       <div className={`flex items-baseline gap-1.5 mb-0.5 ${isMe ? "flex-row-reverse" : ""}`}>
-                        <span className={`font-bold text-[10px] ${isMe ? "text-indigo-300" : "text-neutral-100"}`}>{msg.sender}</span>
-                        <span className="text-[8px] text-neutral-600 font-mono">
+                        <span className={`font-bold text-xs ${isMe ? "text-indigo-300" : "text-neutral-100"}`}>{msg.sender}</span>
+                        <span className="text-xs text-neutral-600 font-mono">
                           {new Date(msg.time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       </div>
@@ -943,9 +944,10 @@ export default function Home() {
             <div className="absolute bottom-[64px] left-0 w-full flex justify-center pointer-events-none">
               <button
                 onClick={scrollToBottom}
-                className="pointer-events-auto bg-indigo-600/95 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-500/20 text-[11px] font-black px-4 py-2 rounded-full backdrop-blur-md transition-all flex items-center gap-1.5 animate-bounce"
+                className="pointer-events-auto bg-neutral-800/95 border border-neutral-700 hover:bg-neutral-700 text-neutral-300 shadow-xl shadow-black/50 text-xs font-bold px-3 py-1.5 rounded-full backdrop-blur-md transition-all flex items-center gap-1"
               >
-                <span>👇</span> <span>최신 메시지 보기</span>
+                <span>최신 메시지</span>
+                <ChevronDown className="w-4 h-4" />
               </button>
             </div>
           )}
@@ -956,7 +958,7 @@ export default function Home() {
               className="flex-1 bg-neutral-800/80 text-xs text-white outline-none px-3 py-2 rounded-xl border border-neutral-700 focus:border-indigo-500/60 transition-all font-medium placeholder:text-neutral-600"
               value={chatInput} onChange={e => setChatInput(e.target.value)} />
             <button type="submit"
-              className="bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-black px-3 py-2 rounded-xl transition-all">
+              className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold px-3 py-2 rounded-xl transition-all">
               전송
             </button>
           </form>
@@ -973,13 +975,13 @@ export default function Home() {
         }`}
       >
         {chatOpen ? (
-          <span className="text-white text-lg font-black">✕</span>
+          <span className="text-white text-lg font-bold">✕</span>
         ) : (
           <span className="text-xl">💬</span>
         )}
         {/* 안읽음 뱃지 */}
         {!chatOpen && unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center px-1 border-2 border-neutral-950">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-rose-500 text-white text-xs font-bold rounded-full flex items-center justify-center px-1 border-2 border-neutral-950">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

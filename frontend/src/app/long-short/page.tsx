@@ -45,20 +45,20 @@ function LongShortGauge({ longPct, label }: { longPct: number; label: string }) 
 
   return (
     <div className="space-y-3">
-      <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">{label}</p>
+      <p className="text-xs text-neutral-500 font-bold uppercase tracking-wider">{label}</p>
 
       {/* Large Numbers */}
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-wider mb-1">Long</p>
-          <p className="text-3xl md:text-4xl font-black text-emerald-400 tracking-tight">{longPct.toFixed(2)}%</p>
+          <p className="text-xs text-emerald-500 font-bold uppercase tracking-wider mb-1">Long</p>
+          <p className="text-3xl md:text-4xl font-bold text-emerald-400 tracking-tight">{longPct.toFixed(2)}%</p>
         </div>
-        <div className={`text-[10px] font-black px-2.5 py-1 rounded-full ${isLongDominant ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
+        <div className={`text-xs font-bold px-2.5 py-1 rounded-full ${isLongDominant ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border border-rose-500/20"}`}>
           {isLongDominant ? "롱 우세" : "숏 우세"}
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider mb-1">Short</p>
-          <p className="text-3xl md:text-4xl font-black text-rose-400 tracking-tight">{shortPct.toFixed(2)}%</p>
+          <p className="text-xs text-rose-500 font-bold uppercase tracking-wider mb-1">Short</p>
+          <p className="text-3xl md:text-4xl font-bold text-rose-400 tracking-tight">{shortPct.toFixed(2)}%</p>
         </div>
       </div>
 
@@ -122,13 +122,13 @@ export default function LongShortPage() {
         <div className="flex items-center gap-0 mb-6 bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden w-fit">
           <button
             onClick={() => setTraderType("top")}
-            className={`px-5 py-2.5 text-sm font-black transition-all ${traderType === "top" ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-white"}`}
+            className={`px-5 py-2.5 text-sm font-bold transition-all ${traderType === "top" ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-white"}`}
           >
             탑 포지션
           </button>
           <button
             onClick={() => setTraderType("global")}
-            className={`px-5 py-2.5 text-sm font-black transition-all ${traderType === "global" ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-white"}`}
+            className={`px-5 py-2.5 text-sm font-bold transition-all ${traderType === "global" ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-white"}`}
           >
             전체 트레이더
           </button>
@@ -143,13 +143,13 @@ export default function LongShortPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {/* Symbol */}
           <div className="space-y-1.5">
-            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">심볼</p>
+            <p className="text-xs text-neutral-600 font-bold uppercase tracking-wider">심볼</p>
             <div className="flex bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
               {ASSETS.map((a) => (
                 <button
                   key={a.symbol}
                   onClick={() => setAsset(a.symbol)}
-                  className={`flex-1 px-2 py-2 text-xs font-black transition-colors ${asset === a.symbol ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-white"}`}
+                  className={`flex-1 px-2 py-2 text-xs font-bold transition-colors ${asset === a.symbol ? "bg-indigo-600 text-white" : "text-neutral-500 hover:text-white"}`}
                 >
                   {a.label}
                 </button>
@@ -159,7 +159,7 @@ export default function LongShortPage() {
 
           {/* Timeframe */}
           <div className="space-y-1.5">
-            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">기간</p>
+            <p className="text-xs text-neutral-600 font-bold uppercase tracking-wider">기간</p>
             <div className="flex bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
               {TIMEFRAMES.map((tf) => (
                 <button
@@ -175,7 +175,7 @@ export default function LongShortPage() {
 
           {/* Chart Type */}
           <div className="space-y-1.5">
-            <p className="text-[10px] text-neutral-600 font-bold uppercase tracking-wider">차트</p>
+            <p className="text-xs text-neutral-600 font-bold uppercase tracking-wider">차트</p>
             <div className="flex bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
               {CHART_TYPES.map((ct) => (
                 <button
@@ -208,16 +208,16 @@ export default function LongShortPage() {
         <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-xs font-black text-white uppercase tracking-wider">
+              <h2 className="text-xs font-bold text-white uppercase tracking-wider">
                 {asset} 롱/숏 비율 추세
               </h2>
-              <span className="text-[10px] text-neutral-600">
+              <span className="text-xs text-neutral-600">
                 {TIMEFRAMES.find(t => t.value === timeframe)?.label} · {traderType === "top" ? "탑" : "전체"}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[9px] font-bold text-neutral-600">LIVE</span>
+              <span className="text-xs font-bold text-neutral-600">LIVE</span>
             </div>
           </div>
           <LongShortChartDynamic
@@ -229,7 +229,7 @@ export default function LongShortPage() {
         </div>
 
         {/* ─── Footer note ─── */}
-        <p className="text-[10px] text-neutral-700 mt-4 leading-relaxed text-center">
+        <p className="text-xs text-neutral-700 mt-4 leading-relaxed text-center">
           데이터 출처: Binance Futures API · 30초마다 자동 갱신
         </p>
       </div>

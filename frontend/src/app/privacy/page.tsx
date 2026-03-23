@@ -23,18 +23,18 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-neutral-950 text-neutral-300">
       <div className="max-w-[1600px] mx-auto px-3 md:px-8 py-6 md:py-10">
         <div className="space-y-3">
-          <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">
+          <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">
             {title}
           </h1>
-          <p className="text-[11px] md:text-[12px] text-neutral-600">{sub}</p>
+          <p className="text-sm md:text-[12px] text-neutral-600">{sub}</p>
 
           <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-4 md:p-6">
-            <pre className="text-[11px] md:text-[12px] text-neutral-500 whitespace-pre-wrap leading-7">
+            <pre className="text-sm md:text-[12px] text-neutral-500 whitespace-pre-wrap leading-7">
               {text}
             </pre>
           </div>
 
-          <div className="text-[11px] md:text-[12px] text-neutral-600">
+          <div className="text-sm md:text-[12px] text-neutral-600">
             <Link href="/" className="text-indigo-400 hover:text-indigo-300 font-bold">
               {back}
             </Link>

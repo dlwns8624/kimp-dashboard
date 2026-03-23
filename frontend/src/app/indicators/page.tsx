@@ -2,17 +2,18 @@
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
+import { TrendingUp, Coins, CircleDollarSign, Bitcoin } from "lucide-react";
 
 const TradingViewSingleQuote = dynamic(() => import("@/components/TradingViewSingleQuote"), { ssr: false });
 
 // ── 탭 정의 ─────────────────────────────────────────────────────────────────
 type TabKey = "stocks" | "commodities" | "forex" | "crypto";
 
-const TABS: { key: TabKey; label: string; emoji: string }[] = [
-  { key: "stocks",      label: "주식지수",   emoji: "📈" },
-  { key: "commodities", label: "원자재",     emoji: "🏅" },
-  { key: "forex",       label: "통화",       emoji: "💱" },
-  { key: "crypto",      label: "암호화폐",   emoji: "₿" },
+const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: "stocks",      label: "주식지수",   icon: <TrendingUp className="w-4 h-4" /> },
+  { key: "commodities", label: "원자재",     icon: <Coins className="w-4 h-4" /> },
+  { key: "forex",       label: "통화",       icon: <CircleDollarSign className="w-4 h-4" /> },
+  { key: "crypto",      label: "암호화폐",   icon: <Bitcoin className="w-4 h-4" /> },
 ];
 
 const STOCKS = [
@@ -63,14 +64,16 @@ const CRYPTO = [
 
 function QuoteGrid({ items }: { items: { symbol: string; label: string; sub: string }[] }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
       {items.map(({ symbol, label, sub }) => (
-        <div key={symbol} className="space-y-1">
-          <div className="flex items-center gap-1.5 px-1">
-            <span className="text-xs font-black text-white">{label}</span>
-            <span className="text-[10px] text-neutral-600 truncate">{sub}</span>
+        <div key={symbol} className="flex flex-col space-y-3 p-4 bg-neutral-900/40 rounded-2xl border border-neutral-800/80 hover:border-neutral-700 transition-colors">
+          <div className="flex flex-col gap-0.5 px-1 tracking-tight">
+            <span className="text-sm font-semibold text-neutral-100">{label}</span>
+            <span className="text-xs text-neutral-500 truncate">{sub}</span>
           </div>
-          <TradingViewSingleQuote symbol={symbol} />
+          <div className="flex-1 min-h-[50px] rounded-xl overflow-hidden bg-neutral-950/50 shadow-inner">
+            <TradingViewSingleQuote symbol={symbol} />
+          </div>
         </div>
       ))}
     </div>
@@ -81,29 +84,29 @@ export default function IndicatorsPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("stocks");
 
   return (
-    <div className="min-h-screen bg-neutral-950 pb-20 md:pb-8">
-      <div className="max-w-[1400px] mx-auto px-2.5 md:px-8 pt-4 md:pt-8 pb-2">
-        <div className="flex items-center gap-3 mb-1">
-          <h1 className="text-xl md:text-3xl font-black text-white tracking-tight">시장 지표</h1>
-          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black border border-emerald-500/20 animate-pulse">LIVE</span>
+    <div className="min-h-screen bg-neutral-950 pb-20 md:pb-12 text-neutral-300">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 pt-6 md:pt-10 pb-4">
+        <div className="flex items-center gap-3 mb-2">
+          <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight">시장 지표</h1>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-sm font-semibold border border-emerald-500/20 uppercase tracking-widest">LIVE</span>
         </div>
-        <p className="text-neutral-500 text-xs md:text-sm">TradingView 실시간 글로벌 시장 데이터</p>
+        <p className="text-neutral-500 text-sm">TradingView 실시간 글로벌 시장 데이터</p>
       </div>
 
-      <div className="sticky top-14 z-40 bg-neutral-950/95 backdrop-blur-md border-b border-neutral-800">
-        <div className="max-w-[1400px] mx-auto px-2.5 md:px-8">
-          <div className="flex overflow-x-auto scrollbar-hide gap-0.5 py-1.5">
-            {TABS.map(({ key, label, emoji }) => (
+      <div className="sticky top-14 z-40 bg-neutral-950/80 backdrop-blur-xl border-b border-neutral-800/60">
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8">
+          <div className="flex overflow-x-auto scrollbar-hide gap-2 py-3">
+            {TABS.map(({ key, label, icon }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-1.5 px-3 md:px-4 py-2 rounded-xl text-xs md:text-sm font-bold whitespace-nowrap transition-all flex-shrink-0 ${
+                className={`flex items-center gap-2 px-4 md:px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
                   activeTab === key
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/20"
-                    : "text-neutral-400 hover:text-white hover:bg-neutral-800/60"
+                    ? "bg-indigo-600/10 text-indigo-400 border border-indigo-500/30 shadow-sm"
+                    : "text-neutral-400 border border-transparent hover:text-neutral-200 hover:bg-neutral-800/60"
                 }`}
               >
-                <span>{emoji}</span>
+                {icon}
                 <span>{label}</span>
               </button>
             ))}
@@ -111,30 +114,30 @@ export default function IndicatorsPage() {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-2.5 md:px-8 py-4 md:py-6">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6 md:py-8">
         {activeTab === "stocks" && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <SectionHeader title="주식 지수" desc="글로벌 주요 주가 지수 실시간 시세" />
             <QuoteGrid items={STOCKS} />
           </div>
         )}
 
         {activeTab === "commodities" && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <SectionHeader title="원자재" desc="금, 은, 원유, 구리 등 원자재 실시간 시세" />
             <QuoteGrid items={COMMODITIES} />
           </div>
         )}
 
         {activeTab === "forex" && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <SectionHeader title="통화 (Forex)" desc="달러인덱스, 원달러, 주요 환율 실시간 시세" />
             <QuoteGrid items={FOREX} />
           </div>
         )}
 
         {activeTab === "crypto" && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <SectionHeader title="암호화폐" desc="바이낸스 기준 주요 코인 실시간 시세" />
             <QuoteGrid items={CRYPTO} />
           </div>
@@ -146,9 +149,9 @@ export default function IndicatorsPage() {
 
 function SectionHeader({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="border-b border-neutral-800 pb-3">
-      <h2 className="text-base md:text-xl font-black text-white">{title}</h2>
-      <p className="text-neutral-500 text-xs md:text-sm mt-0.5">{desc}</p>
+    <div className="pb-2">
+      <h2 className="text-lg md:text-xl font-bold text-neutral-100 tracking-tight mb-1.5">{title}</h2>
+      <p className="text-neutral-400 text-sm">{desc}</p>
     </div>
   );
 }

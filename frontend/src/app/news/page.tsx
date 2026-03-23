@@ -90,8 +90,8 @@ export default function NewsPage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <h1 className="text-xl md:text-2xl font-black text-white tracking-tight">글로벌 뉴스</h1>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-black border border-emerald-500/20 animate-pulse">LIVE</span>
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">글로벌 뉴스</h1>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-bold border border-emerald-500/20 animate-pulse">LIVE</span>
             </div>
             <p className="text-neutral-500 text-xs">TradingView 실시간 마켓 뉴스 · Reuters · Hankyung · CoinNess</p>
           </div>
@@ -101,7 +101,7 @@ export default function NewsPage() {
           >
             <span className="text-base leading-none">↻</span>
             새로고침
-            <span className="text-[10px] text-neutral-600 ml-1">{timeSinceRefresh()}</span>
+            <span className="text-xs text-neutral-600 ml-1">{timeSinceRefresh()}</span>
           </button>
         </div>
       </div>
