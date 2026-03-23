@@ -5,9 +5,9 @@ import React, { useEffect, useRef, memo } from 'react';
 interface ChartProps {
   symbol: string;
   upbitSymbol?: string;
-  tvSymbol?: string;       // 직접 TradingView 심볼 지정
-  displayName?: string;    // 헤더 표시 이름
-  subName?: string;        // 헤더 서브 이름
+  tvSymbol?: string;
+  displayName?: string;
+  subName?: string;
 }
 
 const COIN_MAP: Record<string, string> = {
@@ -44,32 +44,29 @@ function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartPr
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const widgetRef = useRef<any>(null);
-
-  // containerId는 마운트 시 한번만 생성 (리렌더링마다 바뀌면 TradingView가 못 찾음)
   const containerIdRef = useRef(`tv-chart-${symbol}-${Math.random().toString(36).slice(2, 7)}`);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    // 기존 위젯 정리
     if (widgetRef.current) { el.innerHTML = ""; widgetRef.current = null; }
 
-    // 마운트 시점의 실제 뷰포트 너비로 모바일 판단 (state 없이)
+    // 마운트 시점 뷰포트로 모바일 판단
     const mobile = typeof window !== "undefined" && window.innerWidth < 768;
-    const height = mobile ? 260 : 450;
+    // 모바일: 인디케이터 없으므로 높이를 좀 더 여유있게
+    const height = mobile ? 380 : 500;
     el.style.height = height + "px";
 
     const tvSym = getTvSymbol(symbol, tvSymbolProp);
 
-    // TradingView 스크립트가 이미 로드됐으면 바로 위젯 생성
     const createWidget = () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (!el || !(window as any).TradingView) return;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const TV = (window as any).TradingView;
       widgetRef.current = new TV.widget({
-        symbol,
+        symbol:            tvSym,
         interval:          "15",
         timezone:          "Asia/Seoul",
         theme:             "dark",
@@ -80,17 +77,17 @@ function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartPr
         toolbar_bg:        "#0a0a0a",
         enable_publishing: false,
 
-        // ── 모바일: 상단 툴바·좌측 사이드바·범례 완전 제거 ──
-        hide_top_toolbar:    mobile,   // 시간봉 선택·심볼 검색바 숨김
-        hide_side_toolbar:   mobile,   // 좌측 드로잉 툴 숨김
-        hide_legend:         mobile,   // OHLCV 범례 숨김
-        withdateranges:      !mobile,  // 날짜 범위 버튼 (하단)
-        allow_symbol_change: !mobile,
+        // ── 툴바·사이드바는 모바일/PC 모두 유지 ──
+        hide_top_toolbar:    false,   // 1분/15분/1시간, 심볼 검색 유지
+        hide_side_toolbar:   false,   // 좌측 드로잉 툴 유지
+        hide_legend:         false,   // OHLCV 범례 유지
+        withdateranges:      true,
+        allow_symbol_change: true,
+        save_image:          false,
+        hide_volume:         false,
 
-        save_image:    false,
-        hide_volume:   false,
-
-        // ── 모바일: 인디케이터 없이 캔들+거래량만 / PC: 볼밴+MACD ──
+        // ── 모바일: MACD·볼밴 제거 → 캔들 영역 최대화
+        //    PC: 볼밴 + MACD 유지 ──
         studies: mobile ? [] : ["STD;Bollinger_Bands", "STD;MACD"],
 
         overrides: {
@@ -127,24 +124,21 @@ function Chart({ symbol, tvSymbol: tvSymbolProp, displayName, subName }: ChartPr
 
   return (
     <div className="w-full bg-neutral-900/50 border border-neutral-800 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl relative">
-      {/* 헤더: 모바일에서 최소 높이로 */}
-      <div className="px-2.5 py-1 md:px-3 md:py-2.5 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/20">
+      <div className="px-2.5 py-1.5 md:px-3 md:py-2.5 border-b border-neutral-800 flex justify-between items-center bg-neutral-950/20">
         <div className="flex items-center gap-1.5 md:gap-2">
-          <div className="w-4 h-4 md:w-7 md:h-7 rounded-md md:rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-[8px] md:text-xs ring-1 ring-indigo-500/20">
+          <div className="w-5 h-5 md:w-7 md:h-7 rounded-md md:rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 font-bold text-[9px] md:text-xs ring-1 ring-indigo-500/20">
             {headerDisplay.charAt(0)}
           </div>
           <div>
-            <h3 className="text-white font-black text-[10px] md:text-sm leading-none">{headerDisplay}</h3>
-            <p className="hidden md:block text-[9px] font-bold text-neutral-500 uppercase tracking-widest leading-none mt-0.5">{headerSub}</p>
+            <h3 className="text-white font-black text-xs md:text-sm leading-none mb-0.5">{headerDisplay}</h3>
+            <p className="text-[8px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest leading-none">{headerSub}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 md:gap-2">
-          <span className="md:hidden text-[7px] font-mono text-neutral-600 bg-neutral-800 px-1.5 py-0.5 rounded">15분봉</span>
-          <div className="px-1.5 md:px-2 py-0.5 rounded bg-neutral-800 text-[7px] md:text-[9px] font-bold text-emerald-500 border border-neutral-700">LIVE</div>
-          <div className="w-1 h-1 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse" />
+        <div className="flex items-center gap-1.5 md:gap-2">
+          <div className="px-1.5 md:px-2 py-0.5 rounded-md bg-neutral-800 text-[8px] md:text-[9px] font-bold text-neutral-400 border border-neutral-700">LIVE</div>
+          <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse" />
         </div>
       </div>
-      {/* 높이는 JS로 직접 el.style.height 설정 */}
       <div id={containerIdRef.current} ref={containerRef} className="w-full" />
     </div>
   );
