@@ -590,11 +590,9 @@ export default function Home() {
                           {/* 차트 확장 */}
                           {isExpanded && (
                             <tr>
-                              <td colSpan={8} className="p-0 border-b border-neutral-800 bg-neutral-900/40">
-                                <div className="p-1 md:p-4">
-                                  <div className="h-[220px] sm:h-[300px] md:h-auto">
-                                    <Chart symbol={coin.symbol} upbitSymbol={coin.upbitSymbol} />
-                                  </div>
+                              <td colSpan={8} className="p-0 border-b border-neutral-800 bg-neutral-950/60">
+                                <div className="p-0 md:p-3">
+                                  <Chart symbol={coin.symbol} upbitSymbol={coin.upbitSymbol} />
                                 </div>
                               </td>
                             </tr>
