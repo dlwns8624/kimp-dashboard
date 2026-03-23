@@ -17,6 +17,25 @@ type ChatMessage = { sender: string; text: string; time: number; isSystem?: bool
 const NICK_POOL = ["고래", "달팽", "별빛", "사자", "곰돌", "토끼", "여우", "청매", "폭풍", "번개", "파랑", "무지"];
 const generateNickname = () => NICK_POOL[Math.floor(Math.random() * NICK_POOL.length)];
 const MSG_TTL_MS = 12 * 60 * 60 * 1000; // 12시간
+const CHAT_STORAGE_KEY = "kimp_chat_history";
+
+// localStorage 채팅 헬퍼
+function loadChatFromStorage(): ChatMessage[] {
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed: ChatMessage[] = JSON.parse(raw);
+    const cutoff = Date.now() - MSG_TTL_MS;
+    return parsed.filter(m => m.time > cutoff).slice(-200);
+  } catch { return []; }
+}
+function saveChatToStorage(msgs: ChatMessage[]) {
+  try {
+    const cutoff = Date.now() - MSG_TTL_MS;
+    const toSave = msgs.filter(m => m.time > cutoff).slice(-200);
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(toSave));
+  } catch { /* ignore quota */ }
+}
 type Liquidation = { symbol: string; side: "BUY" | "SELL"; price: number; qty: number; time: number };
 type SortKey     = "symbol" | "price" | "premium" | "volume" | "marketCap";
 type SortOrder   = "asc" | "desc";
@@ -96,13 +115,29 @@ export default function Home() {
             if (type === "CHAT") {
               const m = msg.payload || msg.data;
               if (m) {
-                setChatParams(prev => [...prev, m].slice(-100));
+                setChatParams(prev => {
+                  const next = [...prev, m].slice(-200);
+                  saveChatToStorage(next);
+                  return next;
+                });
                 setChatOpen(open => { if (!open) setUnreadCount(n => n + 1); return open; });
               }
             } else if (type === "CHAT_HISTORY") {
               const history = msg.payload;
               if (Array.isArray(history) && history.length > 0) {
-                setChatParams(history.slice(-100));
+                // 서버 히스토리와 로컬 캐시를 병합 (중복 제거: time 기준)
+                setChatParams(prev => {
+                  const merged = [...prev];
+                  history.forEach((m: ChatMessage) => {
+                    if (!merged.some(x => x.time === m.time && x.sender === m.sender)) {
+                      merged.push(m);
+                    }
+                  });
+                  merged.sort((a, b) => a.time - b.time);
+                  const next = merged.slice(-200);
+                  saveChatToStorage(next);
+                  return next;
+                });
               }
             } else if (type === "LIQUIDATION") {
               const l = msg.payload || msg.data;
@@ -130,7 +165,11 @@ export default function Home() {
                   time: l.time || Date.now(),
                   isSystem: true,
                 };
-                setChatParams(prev => [...prev, alertMsg].slice(-100));
+                setChatParams(prev => {
+                  const next = [...prev, alertMsg].slice(-200);
+                  saveChatToStorage(next);
+                  return next;
+                });
                 setChatOpen(open => { if (!open) setUnreadCount(n => n + 1); return open; });
               }
             }
@@ -201,10 +240,15 @@ export default function Home() {
     }
   }, [chatParams, chatOpen]);
 
-  // localStorage에서 닉네임 로드
+  // localStorage에서 닉네임 + 채팅 히스토리 복원 (마운트 시 즉시)
   useEffect(() => {
-    const saved = localStorage.getItem("kimp_nickname");
-    if (saved) setNickname(saved);
+    const savedNick = localStorage.getItem("kimp_nickname");
+    if (savedNick) setNickname(savedNick);
+
+    const cached = loadChatFromStorage();
+    if (cached.length > 0) {
+      setChatParams(cached);
+    }
   }, []);
 
   // 12시간 이상된 메시지 주기적으로 제거
