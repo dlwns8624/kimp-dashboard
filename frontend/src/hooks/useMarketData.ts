@@ -260,6 +260,17 @@ export function useMarketData(): MarketState {
     };
   }, [fetchFxRate, fetchMarketCap, fetchGlobalMetrics, fetchFearAndGreed, fetchPrices, fetchMacroData]);
 
+  // ── Effect: Update Document Title with Real-time BTC Price ─────────────
+  useEffect(() => {
+    if (typeof document !== "undefined" && coins["BTC"]) {
+      const btc = coins["BTC"];
+      const premiumStr = (btc.premium > 0 ? "+" : "") + btc.premium.toFixed(3) + "%";
+      const priceStr = btc.krwPrice.toLocaleString();
+      document.title = `${premiumStr} | ${priceStr} BTC/KRW`;
+    }
+  }, [coins]);
+
+
   return {
     coins,
     fxRate,
